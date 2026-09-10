@@ -226,7 +226,7 @@ button {
 
   border-radius: 12px;
 
-  background: #fff;
+  background: #ffffff;
 
   box-shadow:
     0 8px 22px
@@ -242,8 +242,6 @@ button {
   object-fit: cover;
 
   border-radius: 12px;
-
-  overflow: hidden;
 
   filter:
     drop-shadow(
@@ -367,7 +365,7 @@ button {
 }
 
 /* =========================================================
-   MOBILE MENU BUTTON
+   MOBILE MENU
 ========================================================= */
 
 .menu-toggle {
@@ -429,12 +427,30 @@ button {
   gap: 60px;
 }
 
+/* Desktop:
+   copy first, visual second */
 .hero-copy {
+  grid-column: 1;
+
   max-width: 650px;
 
   position: relative;
 
   z-index: 3;
+}
+
+.hero-visual {
+  grid-column: 2;
+
+  grid-row: 1;
+
+  min-height: 620px;
+
+  position: relative;
+
+  display: grid;
+
+  place-items: center;
 }
 
 .eyebrow {
@@ -646,18 +662,8 @@ h1 {
 }
 
 /* =========================================================
-   HERO PEOPLE
+   HERO BACKGROUND PEOPLE
 ========================================================= */
-
-.hero-visual {
-  min-height: 620px;
-
-  position: relative;
-
-  display: grid;
-
-  place-items: center;
-}
 
 .hero-bg-person {
   position: absolute;
@@ -704,6 +710,10 @@ h1 {
     rotate(8deg);
 }
 
+/* =========================================================
+   HERO RINGS
+========================================================= */
+
 .hero-bg-ring {
   position: absolute;
 
@@ -727,6 +737,10 @@ h1 {
   border-color:
     rgba(78, 205, 196, 0.12);
 }
+
+/* =========================================================
+   HERO MAIN IMAGE
+========================================================= */
 
 .hero-image-main {
   width: 360px;
@@ -771,6 +785,10 @@ h1 {
       rgba(10, 5, 10, 0.78)
     );
 }
+
+/* =========================================================
+   HERO BACK IMAGES
+========================================================= */
 
 .hero-image-back {
   position: absolute;
@@ -824,6 +842,10 @@ h1 {
 
   opacity: 0.72;
 }
+
+/* =========================================================
+   PROFILE INFO
+========================================================= */
 
 .hero-profile-info {
   position: absolute;
@@ -891,7 +913,7 @@ h1 {
 .floating-card {
   position: absolute;
 
-  z-index: 6;
+  z-index: 8;
 
   display: flex;
 
@@ -902,11 +924,11 @@ h1 {
   padding: 13px 14px;
 
   background:
-    rgba(255, 255, 255, 0.94);
+    rgba(255, 255, 255, 0.95);
 
   border:
     1px solid
-    rgba(255, 255, 255, 0.88);
+    rgba(255, 255, 255, 0.9);
 
   border-radius: 18px;
 
@@ -936,6 +958,8 @@ h1 {
   font-size: 0.66rem;
 
   margin-top: 2px;
+
+  line-height: 1.35;
 }
 
 .floating-icon,
@@ -980,37 +1004,29 @@ h1 {
    DESKTOP BANNER POSITIONS
 ========================================================= */
 
+/* Top right, away from face */
 .like-card {
   right: -48px;
 
-  top: 42px;
+  top: 28px;
 
   transform:
     rotate(-5deg);
 }
 
+/* Lower left, away from profile information */
 .message-card {
-  left: -48px;
+  left: -50px;
 
-  bottom: 34px;
+  bottom: 55px;
 
   transform:
     rotate(4deg);
 }
 
 /* =========================================================
-   MESSAGE CARD DOWNLOAD AREA
+   MESSAGE CONTENT
 ========================================================= */
-
-.message-card {
-  flex-direction: column;
-
-  align-items: stretch;
-
-  gap: 10px;
-
-  min-width: 215px;
-}
 
 .message-content {
   display: flex;
@@ -1020,24 +1036,42 @@ h1 {
   gap: 10px;
 }
 
-.message-content > div:last-child {
-  min-width: 0;
+/* =========================================================
+   HERO DOWNLOAD BUTTON
+   This is OUTSIDE both banners.
+========================================================= */
+
+.hero-download-wrap {
+  position: absolute;
+
+  left: 50%;
+
+  bottom: -5px;
+
+  transform:
+    translateX(-50%);
+
+  z-index: 10;
+
+  display: flex;
+
+  justify-content: center;
 }
 
-.message-download {
-  display: inline-flex;
+.hero-download-btn {
+  min-width: 250px;
+
+  min-height: 62px;
+
+  padding: 8px 14px;
+
+  display: flex;
 
   align-items: center;
 
-  justify-content: center;
+  gap: 12px;
 
-  gap: 6px;
-
-  min-height: 34px;
-
-  padding: 0 12px;
-
-  border-radius: 10px;
+  border-radius: 17px;
 
   color: #fff;
 
@@ -1048,31 +1082,94 @@ h1 {
       var(--brand-red-dark)
     );
 
-  font-size: 0.68rem;
-
-  font-weight: 800;
-
   box-shadow:
-    0 8px 18px
-    rgba(255, 13, 27, 0.20);
+    0 18px 38px
+    rgba(255, 13, 27, 0.28);
 
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease;
 }
 
-.message-download:hover {
+.hero-download-btn:hover {
   transform:
-    translateY(-1px);
+    translateY(-3px);
 
   box-shadow:
-    0 11px 22px
-    rgba(255, 13, 27, 0.28);
+    0 22px 45px
+    rgba(255, 13, 27, 0.34);
 }
 
-.message-download .play-store-icon {
-  width: 17px;
-  height: 17px;
+.hero-download-icon {
+  width: 42px;
+  height: 42px;
+
+  display: grid;
+
+  place-items: center;
+
+  flex-shrink: 0;
+
+  border-radius: 12px;
+
+  background:
+    rgba(255, 255, 255, 0.14);
+}
+
+.hero-download-icon img {
+  width: 29px;
+  height: 29px;
+
+  object-fit: contain;
+}
+
+.hero-download-text {
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: flex-start;
+
+  justify-content: center;
+
+  line-height: 1.15;
+
+  flex: 1;
+}
+
+.hero-download-text small {
+  font-size: 0.65rem;
+
+  color:
+    rgba(255, 255, 255, 0.74);
+
+  font-weight: 600;
+}
+
+.hero-download-text strong {
+  margin-top: 3px;
+
+  font-size: 0.94rem;
+
+  font-weight: 800;
+}
+
+.hero-download-arrow {
+  width: 30px;
+  height: 30px;
+
+  display: grid;
+
+  place-items: center;
+
+  border-radius: 10px;
+
+  background:
+    rgba(255, 255, 255, 0.12);
+
+  font-size: 1.1rem;
+
+  font-weight: 800;
 }
 
 /* =========================================================
@@ -1862,7 +1959,7 @@ h1 {
 }
 
 /* =========================================================
-   DOWNLOAD
+   DOWNLOAD SECTION
 ========================================================= */
 
 .download-box {
@@ -2227,6 +2324,14 @@ button:focus-visible {
     gap: 50px;
   }
 
+  .like-card {
+    right: -30px;
+  }
+
+  .message-card {
+    left: -30px;
+  }
+
 }
 
 /* =========================================================
@@ -2321,11 +2426,11 @@ button:focus-visible {
 
   /* =======================================================
      MOBILE HERO
-     Amina comes FIRST
+     Amina visual comes first.
   ======================================================= */
 
   .hero {
-    padding-top: 22px;
+    padding-top: 18px;
 
     min-height: auto;
   }
@@ -2335,7 +2440,7 @@ button:focus-visible {
 
     flex-direction: column;
 
-    gap: 18px;
+    gap: 42px;
   }
 
   .hero-visual {
@@ -2343,13 +2448,11 @@ button:focus-visible {
 
     width: 100%;
 
-    min-height: 610px;
+    min-height: 700px;
 
-    margin-top: 0;
+    padding-top: 62px;
 
-    padding-top: 55px;
-
-    padding-bottom: 58px;
+    padding-bottom: 82px;
 
     overflow: visible;
   }
@@ -2377,7 +2480,49 @@ button:focus-visible {
   }
 
   /* =======================================================
-     MOBILE FLOATING CARDS
+     MOBILE IMAGE
+  ======================================================= */
+
+  .hero-image-main {
+    width: 320px;
+
+    height: 475px;
+
+    border-radius: 38px;
+  }
+
+  .hero-image-back {
+    width: 175px;
+
+    height: 245px;
+  }
+
+  .back-one {
+    left: 0;
+
+    top: 135px;
+  }
+
+  .back-two {
+    right: 0;
+
+    bottom: 125px;
+  }
+
+  .ring-one {
+    width: 390px;
+
+    height: 390px;
+  }
+
+  .ring-two {
+    width: 520px;
+
+    height: 520px;
+  }
+
+  /* =======================================================
+     FLOATING CARDS
   ======================================================= */
 
   .floating-card {
@@ -2405,50 +2550,97 @@ button:focus-visible {
   }
 
   /*
-    Match stays ABOVE the image
+    Match:
+    above and outside the main image
   */
   .like-card {
-    top: 0;
+    top: 8px;
 
-    right: 2px;
+    right: 0;
 
     transform:
       rotate(-3deg);
   }
 
   /*
-    Message stays BELOW the image
+    Message:
+    below image and above download button
   */
   .message-card {
-    left: 2px;
+    left: 0;
 
-    bottom: 0;
-
-    min-width: 215px;
+    bottom: 58px;
 
     transform:
       rotate(3deg);
   }
 
-  .message-download {
-    width: 100%;
+  /* =======================================================
+     HERO DOWNLOAD BUTTON
+     Separate from both banners.
+  ======================================================= */
 
-    min-height: 33px;
+  .hero-download-wrap {
+    left: 50%;
 
-    font-size: 0.65rem;
+    bottom: -4px;
+
+    transform:
+      translateX(-50%);
   }
+
+  .hero-download-btn {
+    min-width: 270px;
+
+    min-height: 64px;
+
+    padding:
+      9px 15px;
+
+    border-radius: 18px;
+  }
+
+  .hero-download-icon {
+    width: 44px;
+
+    height: 44px;
+
+    border-radius: 13px;
+  }
+
+  .hero-download-icon img {
+    width: 31px;
+
+    height: 31px;
+  }
+
+  .hero-download-text small {
+    font-size: 0.67rem;
+  }
+
+  .hero-download-text strong {
+    font-size: 0.98rem;
+  }
+
+  /* =======================================================
+     OTHER SECTIONS
+  ======================================================= */
 
   .person-left,
   .person-right {
     opacity: 0.08;
   }
 
-  .feature-photo-grid {
-    grid-template-columns: 1fr;
+  .connection-strip-inner {
+    flex-wrap: wrap;
+
+    justify-content: center;
   }
 
-  .feature-photo {
-    height: 330px;
+  .muted-label {
+    width: 100%;
+
+    text-align: center;
   }
 
   .experience-grid,
@@ -2466,7 +2658,8 @@ button:focus-visible {
   }
 
   .download-box {
-    padding: 45px 30px;
+    padding:
+      45px 30px;
 
     flex-direction: column;
 
@@ -2480,6 +2673,7 @@ button:focus-visible {
   .footer-grid {
     grid-template-columns: 1fr;
   }
+
 }
 
 /* =========================================================
@@ -2492,13 +2686,182 @@ button:focus-visible {
     padding: 82px 0;
   }
 
-  /*
-    Small top spacing means Amina appears
-    very early after opening the site.
-  */
   .hero {
-    padding-top: 14px;
+    padding-top: 10px;
   }
+
+  .hero-grid {
+    gap: 36px;
+  }
+
+  /* =======================================================
+     AMINA FIRST VIEW
+  ======================================================= */
+
+  .hero-visual {
+    min-height: 635px;
+
+    padding-top: 50px;
+
+    padding-bottom: 77px;
+  }
+
+  .hero-image-main {
+    width: 290px;
+
+    height: 430px;
+
+    border-radius: 34px;
+  }
+
+  .hero-image-back {
+    width: 160px;
+
+    height: 230px;
+
+    border-radius: 26px;
+  }
+
+  .back-one {
+    left: -4px;
+
+    top: 105px;
+  }
+
+  .back-two {
+    right: -4px;
+
+    bottom: 103px;
+  }
+
+  .ring-one {
+    width: 350px;
+
+    height: 350px;
+  }
+
+  .ring-two {
+    width: 460px;
+
+    height: 460px;
+  }
+
+  /* =======================================================
+     PHONE FLOATING CARDS
+  ======================================================= */
+
+  .floating-card {
+    max-width: 185px;
+
+    padding: 10px 11px;
+
+    border-radius: 15px;
+  }
+
+  .floating-card strong {
+    font-size: 0.69rem;
+  }
+
+  .floating-card span {
+    font-size: 0.59rem;
+
+    line-height: 1.3;
+  }
+
+  .floating-icon,
+  .avatar-mini {
+    width: 29px;
+    height: 29px;
+
+    border-radius: 9px;
+  }
+
+  /* Match above Amina */
+  .like-card {
+    top: 0;
+
+    right: 0;
+
+    max-width: 185px;
+
+    transform:
+      rotate(-3deg);
+  }
+
+  /* Message below Amina */
+  .message-card {
+    left: 0;
+
+    bottom: 51px;
+
+    max-width: 195px;
+
+    transform:
+      rotate(3deg);
+  }
+
+  /* =======================================================
+     BIG DOWNLOAD BUTTON
+     Separate from message banner.
+  ======================================================= */
+
+  .hero-download-wrap {
+    bottom: -2px;
+
+    width: 100%;
+
+    padding-inline: 4px;
+  }
+
+  .hero-download-btn {
+    width: min(
+      320px,
+      calc(100vw - 34px)
+    );
+
+    min-width: 0;
+
+    min-height: 66px;
+
+    padding:
+      9px 15px;
+
+    border-radius: 18px;
+
+    gap: 12px;
+  }
+
+  .hero-download-icon {
+    width: 45px;
+
+    height: 45px;
+
+    border-radius: 13px;
+  }
+
+  .hero-download-icon img {
+    width: 31px;
+
+    height: 31px;
+  }
+
+  .hero-download-text small {
+    font-size: 0.66rem;
+  }
+
+  .hero-download-text strong {
+    font-size: 0.98rem;
+  }
+
+  .hero-download-arrow {
+    width: 32px;
+
+    height: 32px;
+  }
+
+  /* =======================================================
+     HERO COPY
+  ======================================================= */
 
   h1 {
     font-size:
@@ -2521,142 +2884,6 @@ button:focus-visible {
     width: 100%;
   }
 
-  /* =======================================================
-     AMINA FIRST VIEW
-  ======================================================= */
-
-  .hero-visual {
-    min-height: 545px;
-
-    padding-top: 47px;
-
-    padding-bottom: 48px;
-  }
-
-  .hero-image-main {
-    width: 290px;
-    height: 430px;
-
-    border-radius: 34px;
-  }
-
-  .hero-image-back {
-    width: 160px;
-    height: 230px;
-  }
-
-  .back-one {
-    left: -5px;
-
-    top: 104px;
-  }
-
-  .back-two {
-    right: -2px;
-
-    bottom: 68px;
-  }
-
-  .ring-one {
-    width: 350px;
-    height: 350px;
-  }
-
-  .ring-two {
-    width: 460px;
-    height: 460px;
-  }
-
-  /* =======================================================
-     PHONE FLOATING CARDS
-  ======================================================= */
-
-  .floating-card {
-    max-width: 190px;
-
-    padding: 10px 11px;
-
-    border-radius: 16px;
-  }
-
-  .floating-card strong {
-    font-size: 0.69rem;
-  }
-
-  .floating-card span {
-    font-size: 0.59rem;
-
-    line-height: 1.3;
-  }
-
-  .floating-icon,
-  .avatar-mini {
-    width: 29px;
-    height: 29px;
-
-    border-radius: 9px;
-  }
-
-  /*
-    MATCH BANNER
-    Above Amina — never over her face.
-  */
-  .like-card {
-    top: 0;
-
-    right: 0;
-
-    max-width: 190px;
-
-    transform:
-      rotate(-3deg);
-  }
-
-  /*
-    MESSAGE + DOWNLOAD
-    Below Amina — never over profile details.
-  */
-  .message-card {
-    left: 0;
-
-    bottom: 0;
-
-    min-width: 205px;
-
-    max-width: 205px;
-
-    padding: 9px 10px;
-
-    transform:
-      rotate(3deg);
-  }
-
-  .message-content {
-    gap: 9px;
-  }
-
-  .message-download {
-    width: 100%;
-
-    min-height: 31px;
-
-    padding: 0 10px;
-
-    border-radius: 9px;
-
-    font-size: 0.62rem;
-  }
-
-  .message-download .play-store-icon {
-    width: 15px;
-    height: 15px;
-  }
-
-  .person-left,
-  .person-right {
-    opacity: 0.08;
-  }
-
   .feature-photo-grid {
     grid-template-columns: 1fr;
   }
@@ -2667,11 +2894,13 @@ button:focus-visible {
 
   .experience-photo-main {
     width: 300px;
+
     height: 420px;
   }
 
   .experience-photo-small {
     width: 125px;
+
     height: 175px;
   }
 
@@ -2689,11 +2918,13 @@ button:focus-visible {
 
   .safety-image-card {
     width: 270px;
+
     height: 360px;
   }
 
   .safety-image-bg {
     width: 220px;
+
     height: 300px;
 
     left: -10px;
@@ -2701,6 +2932,7 @@ button:focus-visible {
 
   .shield-ring {
     width: 100px;
+
     height: 100px;
 
     right: 0;
@@ -2710,6 +2942,7 @@ button:focus-visible {
 
   .shield {
     width: 48px;
+
     height: 58px;
   }
 
@@ -2728,7 +2961,8 @@ button:focus-visible {
   }
 
   .download-box {
-    padding: 38px 24px;
+    padding:
+      38px 24px;
   }
 
   .download-copy .btn {
@@ -2747,6 +2981,7 @@ button:focus-visible {
   .footer-bottom {
     flex-direction: column;
   }
+
 }
 
 /* =========================================================
@@ -2755,12 +2990,16 @@ button:focus-visible {
 
 @media (max-width: 380px) {
 
+  .hero-grid {
+    gap: 30px;
+  }
+
   .hero-visual {
-    min-height: 505px;
+    min-height: 610px;
 
-    padding-top: 43px;
+    padding-top: 45px;
 
-    padding-bottom: 43px;
+    padding-bottom: 72px;
   }
 
   .hero-image-main {
@@ -2784,34 +3023,36 @@ button:focus-visible {
   .back-two {
     right: -2px;
 
-    bottom: 62px;
-  }
-
-  .floating-card {
-    max-width: 175px;
+    bottom: 95px;
   }
 
   .like-card {
+    top: 0;
+
     right: -2px;
 
-    top: 0;
+    max-width: 175px;
   }
 
   .message-card {
     left: -2px;
 
-    bottom: 0;
+    bottom: 48px;
 
-    min-width: 190px;
-
-    max-width: 190px;
+    max-width: 185px;
   }
 
-  .message-download {
-    min-height: 30px;
+  .hero-download-btn {
+    width:
+      calc(100vw - 28px);
 
-    font-size: 0.60rem;
+    min-height: 63px;
   }
+
+  .hero-download-text strong {
+    font-size: 0.91rem;
+  }
+
 }
 
 /* =========================================================
@@ -2842,4 +3083,5 @@ button:focus-visible {
 
     transform: none;
   }
+
 }
