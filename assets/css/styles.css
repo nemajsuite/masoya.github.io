@@ -1072,12 +1072,11 @@ h1 {
 */
 
 .like-card {
-  top: 52px;
-
-  right: -35px;
-
-  transform:
-    rotate(-5deg);
+  top: 70px;
+  
+  right: -8px;
+  
+  transform: rotate(-5deg);
 }
 
 
@@ -1087,12 +1086,11 @@ h1 {
 */
 
 .message-card {
-  left: -38px;
-
-  bottom: 64px;
-
-  transform:
-    rotate(4deg);
+  left: -18px;
+  
+  bottom: 80px;
+  
+  transform: rotate(4deg);
 }
 
 
