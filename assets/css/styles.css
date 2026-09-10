@@ -1,3 +1,4 @@
+```css
 :root {
   --brand-red: #ff0d1b;
   --brand-red-dark: #d90613;
@@ -44,29 +45,41 @@ html {
 
 body {
   margin: 0;
+
   color: var(--text);
+
   background: var(--bg);
-  font-family: "Poppins", system-ui, sans-serif;
+
+  font-family:
+    "Poppins",
+    system-ui,
+    sans-serif;
+
   line-height: 1.6;
+
   overflow-x: hidden;
 }
 
 ::selection {
-  background: rgba(255, 13, 27, 0.16);
+  background:
+    rgba(255, 13, 27, 0.16);
 }
 
 a {
   color: inherit;
+
   text-decoration: none;
 }
 
 button,
 a {
-  -webkit-tap-highlight-color: transparent;
+  -webkit-tap-highlight-color:
+    transparent;
 }
 
 img {
   max-width: 100%;
+
   display: block;
 }
 
@@ -75,10 +88,11 @@ button {
 }
 
 .container {
-  width: min(
-    var(--container),
-    calc(100% - 40px)
-  );
+  width:
+    min(
+      var(--container),
+      calc(100% - 40px)
+    );
 
   margin-inline: auto;
 }
@@ -89,6 +103,7 @@ button {
 
 .section {
   padding: 112px 0;
+
   position: relative;
 }
 
@@ -106,12 +121,15 @@ button {
     );
 
   -webkit-background-clip: text;
+
   background-clip: text;
+
   color: transparent;
 }
 
 .page-glow {
   position: fixed;
+
   width: 480px;
   height: 480px;
 
@@ -128,6 +146,7 @@ button {
 
 .glow-one {
   top: 80px;
+
   left: -220px;
 
   background:
@@ -136,6 +155,7 @@ button {
 
 .glow-two {
   top: 420px;
+
   right: -240px;
 
   background:
@@ -148,6 +168,7 @@ button {
 
 .site-header {
   position: sticky;
+
   top: 0;
 
   z-index: 50;
@@ -159,15 +180,20 @@ button {
   background:
     rgba(255, 255, 255, 0.82);
 
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter:
+    blur(20px);
+
+  -webkit-backdrop-filter:
+    blur(20px);
 }
 
 .nav-wrap {
   height: 76px;
 
   display: flex;
+
   align-items: center;
+
   justify-content: space-between;
 
   gap: 24px;
@@ -184,7 +210,7 @@ button {
 }
 
 /* =========================================================
-   ROUNDED LOGO
+   ROUNDED MASOYA LOGO
 ========================================================= */
 
 .logo-box {
@@ -192,28 +218,33 @@ button {
   height: 36px;
 
   display: grid;
+
   place-items: center;
 
   overflow: hidden;
 
-  border-radius: 11px;
+  flex-shrink: 0;
 
-  background: #ffffff;
+  border-radius: 12px;
+
+  background: #fff;
 
   box-shadow:
     0 8px 22px
     rgba(255, 13, 27, 0.20);
-
-  flex-shrink: 0;
 }
 
 .brand-mark {
   width: 100%;
   height: 100%;
 
+  display: block;
+
   object-fit: cover;
 
-  border-radius: 11px;
+  border-radius: 12px;
+
+  overflow: hidden;
 
   filter:
     drop-shadow(
@@ -227,6 +258,10 @@ button {
 
   letter-spacing: -0.03em;
 }
+
+/* =========================================================
+   DESKTOP NAV
+========================================================= */
 
 .desktop-nav {
   display: flex;
@@ -253,6 +288,10 @@ button {
   color: var(--text);
 }
 
+/* =========================================================
+   NAV CTA
+========================================================= */
+
 .nav-cta {
   padding: 11px 17px;
 
@@ -261,7 +300,11 @@ button {
   color: #fff;
 
   display: inline-flex;
+
   align-items: center;
+
+  justify-content: center;
+
   gap: 8px;
 
   font-weight: 800;
@@ -294,30 +337,39 @@ button {
 }
 
 /* =========================================================
-   GOOGLE PLAY ICON
+   OFFICIAL GOOGLE PLAY ICON
 ========================================================= */
 
 .play-store-icon {
-  width: 24px;
-  height: 24px;
+  width: 25px;
+  height: 25px;
 
-  display: inline-grid;
-  place-items: center;
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
 
   flex-shrink: 0;
 }
 
-.play-store-icon svg {
+.play-store-icon img {
   width: 100%;
   height: 100%;
+
+  object-fit: contain;
 
   display: block;
 }
 
 .play-store-icon.small {
-  width: 18px;
-  height: 18px;
+  width: 19px;
+  height: 19px;
 }
+
+/* =========================================================
+   MOBILE MENU BUTTON
+========================================================= */
 
 .menu-toggle {
   display: none;
@@ -425,7 +477,9 @@ button {
 h1,
 h2,
 h3 {
-  font-family: "Poppins", sans-serif;
+  font-family:
+    "Poppins",
+    sans-serif;
 }
 
 h1 {
@@ -466,6 +520,10 @@ h1 {
 
   flex-wrap: wrap;
 }
+
+/* =========================================================
+   BUTTONS
+========================================================= */
 
 .btn {
   display: inline-flex;
@@ -523,6 +581,10 @@ h1 {
 
   font-size: 1.1rem;
 }
+
+/* =========================================================
+   TRUST
+========================================================= */
 
 .trust-row {
   display: flex;
@@ -853,7 +915,8 @@ h1 {
     0 18px 40px
     rgba(17, 17, 17, 0.14);
 
-  backdrop-filter: blur(14px);
+  backdrop-filter:
+    blur(14px);
 }
 
 .floating-card strong,
@@ -990,7 +1053,8 @@ h1 {
 }
 
 .mini-dot.red {
-  background: var(--brand-red);
+  background:
+    var(--brand-red);
 }
 
 .mini-dot.blue {
@@ -1023,7 +1087,8 @@ h1 {
 
   line-height: 1.02;
 
-  letter-spacing: -0.055em;
+  letter-spacing:
+    -0.055em;
 }
 
 .section-heading p,
@@ -1053,7 +1118,8 @@ h1 {
 .feature-photo-card {
   overflow: hidden;
 
-  border-radius: var(--radius);
+  border-radius:
+    var(--radius);
 
   background: #fff;
 
@@ -1139,7 +1205,8 @@ h1 {
 }
 
 .feature-number {
-  color: var(--brand-red);
+  color:
+    var(--brand-red);
 
   font-size: 0.68rem;
 
@@ -1289,7 +1356,8 @@ h1 {
 }
 
 .step.active .step-number {
-  color: var(--brand-yellow);
+  color:
+    var(--brand-yellow);
 }
 
 /* =========================================================
@@ -1798,7 +1866,8 @@ h1 {
 
   background: #fff;
 
-  color: var(--brand-red);
+  color:
+    var(--brand-red);
 
   box-shadow: none;
 }
@@ -1808,6 +1877,10 @@ h1 {
     0 12px 30px
     rgba(0, 0, 0, 0.15);
 }
+
+/* =========================================================
+   DOWNLOAD BADGE
+========================================================= */
 
 .download-badge {
   position: relative;
@@ -1829,10 +1902,10 @@ h1 {
 
   text-align: center;
 
-  backdrop-filter: blur(15px);
+  backdrop-filter:
+    blur(15px);
 }
 
-/* Rounded logo inside download badge */
 .badge-icon {
   width: 65px;
   height: 65px;
@@ -1852,11 +1925,14 @@ h1 {
   overflow: hidden;
 }
 
+/* Rounded Masoya logo */
 .logo-badge img {
   width: 100%;
   height: 100%;
 
   object-fit: cover;
+
+  display: block;
 
   border-radius: 20px;
 }
@@ -2225,6 +2301,7 @@ button:focus-visible {
   .footer-grid {
     grid-template-columns: 1fr;
   }
+
 }
 
 /* =========================================================
@@ -2431,3 +2508,4 @@ button:focus-visible {
   }
 
 }
+```
