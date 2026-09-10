@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
 
@@ -23,10 +24,15 @@
     content="index, follow"
   >
 
+  <!-- =======================================================
+       CANONICAL
+  ======================================================== -->
+
   <link
     rel="canonical"
-    href="https://masoyaapp.github.io/"
+    href="https://nemajsuite.github.io/"
   >
+
 
   <!-- =======================================================
        OPEN GRAPH
@@ -49,7 +55,7 @@
 
   <meta
     property="og:url"
-    content="https://masoyaapp.github.io/"
+    content="https://nemajsuite.github.io/"
   >
 
   <meta
@@ -60,18 +66,19 @@
   <!--
   <meta
     property="og:image"
-    content="https://masoyaapp.github.io/assets/images/social-preview.jpg"
+    content="https://nemajsuite.github.io/assets/images/social-preview.jpg"
   >
   -->
 
 
   <!-- =======================================================
-       TITLE / FAVICON / MANIFEST
+       TITLE / FAVICON
   ======================================================== -->
 
   <title>
     Masoya — Meet. Match. Connect.
   </title>
+
 
   <link
     rel="icon"
@@ -79,14 +86,17 @@
     type="image/svg+xml"
   >
 
-  <link
-    rel="manifest"
-    href="site.webmanifest"
-  >
+
+  <!-- =======================================================
+       NOTE:
+       site.webmanifest intentionally NOT linked.
+       This prevents the landing page from advertising itself
+       as an installable PWA.
+  ======================================================== -->
 
 
   <!-- =======================================================
-       FONTS
+       GOOGLE FONTS
   ======================================================== -->
 
   <link
@@ -114,6 +124,7 @@
     rel="stylesheet"
     href="assets/css/styles.css"
   >
+
 </head>
 
 
@@ -147,7 +158,9 @@
     <div class="container nav-wrap">
 
 
-      <!-- Brand -->
+      <!-- ===================================================
+           BRAND
+      ==================================================== -->
 
       <a
         class="brand"
@@ -172,7 +185,9 @@
       </a>
 
 
-      <!-- Desktop Navigation -->
+      <!-- ===================================================
+           DESKTOP NAVIGATION
+      ==================================================== -->
 
       <nav
         class="desktop-nav"
@@ -198,13 +213,16 @@
       </nav>
 
 
-      <!-- Desktop Download -->
+      <!-- ===================================================
+           DESKTOP GET MASOYA
+      ==================================================== -->
 
       <a
         class="nav-cta"
         href="https://play.google.com/store/apps/details?id=com.nemaj.masoya"
         target="_blank"
         rel="noopener noreferrer"
+        aria-label="Get Masoya on Google Play"
       >
 
         <span class="play-store-icon small">
@@ -221,7 +239,9 @@
       </a>
 
 
-      <!-- Mobile Menu Toggle -->
+      <!-- ===================================================
+           MOBILE MENU TOGGLE
+      ==================================================== -->
 
       <button
         class="menu-toggle"
@@ -271,6 +291,7 @@
         href="https://play.google.com/store/apps/details?id=com.nemaj.masoya"
         target="_blank"
         rel="noopener noreferrer"
+        aria-label="Get Masoya on Google Play"
       >
 
         <span class="play-store-icon small">
@@ -308,7 +329,9 @@
     >
 
 
-      <!-- Decorative Background People -->
+      <!-- ===================================================
+           DECORATIVE PEOPLE
+      ==================================================== -->
 
       <div
         class="hero-bg-person person-left"
@@ -338,7 +361,9 @@
       </div>
 
 
-      <!-- Decorative Rings -->
+      <!-- ===================================================
+           DECORATIVE RINGS
+      ==================================================== -->
 
       <div
         class="hero-bg-ring ring-one"
@@ -356,9 +381,13 @@
 
         <!-- =================================================
              HERO COPY
+             Desktop: LEFT
+             Mobile: BELOW VISUAL
         ================================================== -->
 
-        <div class="hero-copy reveal">
+        <div
+          class="hero-copy reveal"
+        >
 
           <div class="eyebrow">
 
@@ -396,6 +425,7 @@
               href="https://play.google.com/store/apps/details?id=com.nemaj.masoya"
               target="_blank"
               rel="noopener noreferrer"
+              aria-label="Download Masoya from Google Play"
             >
 
               <span class="play-store-icon">
@@ -458,7 +488,8 @@
 
         <!-- =================================================
              HERO VISUAL
-             This becomes FIRST on mobile
+             Desktop: RIGHT
+             Mobile: FIRST
         ================================================== -->
 
         <div
@@ -466,14 +497,16 @@
         >
 
 
-          <!-- ===============================================
-               IMAGE STAGE
-          ================================================ -->
+          <!-- =================================================
+               IMAGE + FLOATING CARDS
+          ================================================== -->
 
           <div class="hero-media-stage">
 
 
-            <!-- Back Image -->
+            <!-- =============================================
+                 BACK IMAGE 1
+            ============================================== -->
 
             <div class="hero-image-back back-one">
 
@@ -486,7 +519,9 @@
             </div>
 
 
-            <!-- Back Image -->
+            <!-- =============================================
+                 BACK IMAGE 2
+            ============================================== -->
 
             <div class="hero-image-back back-two">
 
@@ -499,7 +534,9 @@
             </div>
 
 
-            <!-- Main Amina Profile -->
+            <!-- =============================================
+                 MAIN AMINA PROFILE
+            ============================================== -->
 
             <div class="hero-image-main">
 
@@ -514,6 +551,7 @@
 
               <div class="hero-profile-info">
 
+
                 <div class="hero-profile-name">
 
                   Amina, 24
@@ -526,7 +564,9 @@
 
 
                 <div class="hero-profile-location">
+
                   ⌖ Kano · 3 km away
+
                 </div>
 
 
@@ -546,7 +586,10 @@
                  MATCH BANNER
             ============================================== -->
 
-            <div class="floating-card like-card">
+            <div
+              class="floating-card like-card"
+              aria-label="It's a match"
+            >
 
               <div class="floating-icon like-icon">
                 ♥
@@ -572,7 +615,10 @@
                  MESSAGE BANNER
             ============================================== -->
 
-            <div class="floating-card message-card">
+            <div
+              class="floating-card message-card"
+              aria-label="New message"
+            >
 
               <div class="message-avatar">
                 M
@@ -593,13 +639,14 @@
 
             </div>
 
+
           </div>
 
 
-          <!-- ===============================================
-               SEPARATE DOWNLOAD BUTTON
+          <!-- =================================================
+               SEPARATE HERO DOWNLOAD BUTTON
                NOT INSIDE ANY BANNER
-          ================================================ -->
+          ================================================== -->
 
           <div class="hero-download-wrap">
 
@@ -608,6 +655,7 @@
               href="https://play.google.com/store/apps/details?id=com.nemaj.masoya"
               target="_blank"
               rel="noopener noreferrer"
+              aria-label="Download Masoya on Google Play"
             >
 
               <span class="hero-download-icon">
@@ -718,7 +766,9 @@
       <div class="container">
 
 
-        <div class="section-heading reveal">
+        <div
+          class="section-heading reveal"
+        >
 
           <div class="eyebrow">
             Everything you need
@@ -750,7 +800,9 @@
         <div class="feature-photo-grid">
 
 
-          <!-- Discover -->
+          <!-- =================================================
+               DISCOVER
+          ================================================== -->
 
           <article
             class="feature-photo-card reveal"
@@ -760,7 +812,7 @@
 
               <img
                 src="assets/images/abdullahi.jpg"
-                alt="Hauwa"
+                alt="Discover"
                 loading="lazy"
               >
 
@@ -779,9 +831,11 @@
                 01
               </span>
 
+
               <h3>
                 Smart discovery
               </h3>
+
 
               <p>
 
@@ -796,7 +850,9 @@
           </article>
 
 
-          <!-- Match -->
+          <!-- =================================================
+               MATCH
+          ================================================== -->
 
           <article
             class="feature-photo-card reveal reveal-delay"
@@ -806,7 +862,7 @@
 
               <img
                 src="assets/images/maryam.jpg"
-                alt="Maryam"
+                alt="Likes and matches"
                 loading="lazy"
               >
 
@@ -825,9 +881,11 @@
                 02
               </span>
 
+
               <h3>
                 Likes & matches
               </h3>
+
 
               <p>
 
@@ -842,7 +900,9 @@
           </article>
 
 
-          <!-- Chat -->
+          <!-- =================================================
+               CHAT
+          ================================================== -->
 
           <article
             class="feature-photo-card reveal reveal-delay-2"
@@ -852,7 +912,7 @@
 
               <img
                 src="assets/images/hauwa.jpg"
-                alt="Zainab"
+                alt="Chat"
                 loading="lazy"
               >
 
@@ -871,9 +931,11 @@
                 03
               </span>
 
+
               <h3>
                 Meaningful chat
               </h3>
+
 
               <p>
 
@@ -888,7 +950,9 @@
           </article>
 
 
-          <!-- Profile -->
+          <!-- =================================================
+               PROFILE
+          ================================================== -->
 
           <article
             class="feature-photo-card reveal"
@@ -898,7 +962,7 @@
 
               <img
                 src="assets/images/nazeer.jpg"
-                alt="Fatima"
+                alt="Profile"
                 loading="lazy"
               >
 
@@ -917,9 +981,11 @@
                 04
               </span>
 
+
               <h3>
                 Profile control
               </h3>
+
 
               <p>
 
@@ -1063,6 +1129,7 @@
               </div>
 
             </div>
+
 
           </div>
 
@@ -1367,7 +1434,7 @@
 
 
     <!-- =====================================================
-         DOWNLOAD
+         DOWNLOAD SECTION
     ====================================================== -->
 
     <section
@@ -1426,6 +1493,7 @@
               href="https://play.google.com/store/apps/details?id=com.nemaj.masoya"
               target="_blank"
               rel="noopener noreferrer"
+              aria-label="Get Masoya on Google Play"
             >
 
               <span class="play-store-icon">
@@ -1594,6 +1662,7 @@
 
         </div>
 
+
       </div>
 
     </div>
@@ -1629,4 +1698,5 @@
   ></script>
 
 </body>
+
 </html>
