@@ -1,0 +1,17 @@
+{
+  "name": "Masoya",
+  "short_name": "Masoya",
+  "description": "Discover people, make meaningful matches, and start genuine conversations.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFF8F8",
+  "theme_color": "#FF0D1B",
+  "icons": [
+    {
+      "src": "assets/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
