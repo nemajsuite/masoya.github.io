@@ -30,6 +30,7 @@
   --container: 1180px;
 }
 
+
 /* =========================================================
    RESET
 ========================================================= */
@@ -96,6 +97,7 @@ button {
   margin-inline: auto;
 }
 
+
 /* =========================================================
    GENERAL
 ========================================================= */
@@ -161,6 +163,7 @@ button {
     rgba(78, 205, 196, 0.2);
 }
 
+
 /* =========================================================
    HEADER
 ========================================================= */
@@ -208,6 +211,7 @@ button {
   font-weight: 800;
 }
 
+
 /* =========================================================
    ROUNDED MASOYA LOGO
 ========================================================= */
@@ -243,6 +247,8 @@ button {
 
   border-radius: 12px;
 
+  overflow: hidden;
+
   filter:
     drop-shadow(
       0 5px 14px
@@ -256,8 +262,9 @@ button {
   letter-spacing: -0.03em;
 }
 
+
 /* =========================================================
-   DESKTOP NAV
+   DESKTOP NAVIGATION
 ========================================================= */
 
 .desktop-nav {
@@ -284,6 +291,7 @@ button {
 .desktop-nav a:hover {
   color: var(--text);
 }
+
 
 /* =========================================================
    NAV CTA
@@ -333,6 +341,7 @@ button {
     rgba(255, 13, 27, 0.28);
 }
 
+
 /* =========================================================
    GOOGLE PLAY ICON
 ========================================================= */
@@ -363,6 +372,7 @@ button {
   width: 19px;
   height: 19px;
 }
+
 
 /* =========================================================
    MOBILE MENU
@@ -401,6 +411,7 @@ button {
   display: none;
 }
 
+
 /* =========================================================
    HERO
 ========================================================= */
@@ -427,30 +438,21 @@ button {
   gap: 60px;
 }
 
-/* Desktop:
-   copy first, visual second */
+
+/* =========================================================
+   HERO COPY
+========================================================= */
+
 .hero-copy {
   grid-column: 1;
+
+  grid-row: 1;
 
   max-width: 650px;
 
   position: relative;
 
-  z-index: 3;
-}
-
-.hero-visual {
-  grid-column: 2;
-
-  grid-row: 1;
-
-  min-height: 620px;
-
-  position: relative;
-
-  display: grid;
-
-  place-items: center;
+  z-index: 4;
 }
 
 .eyebrow {
@@ -536,6 +538,7 @@ h1 {
   flex-wrap: wrap;
 }
 
+
 /* =========================================================
    BUTTONS
 ========================================================= */
@@ -596,6 +599,7 @@ h1 {
 
   font-size: 1.1rem;
 }
+
 
 /* =========================================================
    TRUST
@@ -661,8 +665,52 @@ h1 {
     );
 }
 
+
 /* =========================================================
-   HERO BACKGROUND PEOPLE
+   HERO VISUAL
+========================================================= */
+
+.hero-visual {
+  grid-column: 2;
+
+  grid-row: 1;
+
+  position: relative;
+
+  z-index: 3;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  min-width: 0;
+}
+
+
+/* =========================================================
+   HERO MEDIA STAGE
+   Banners live here only.
+========================================================= */
+
+.hero-media-stage {
+  width: 100%;
+
+  min-height: 620px;
+
+  position: relative;
+
+  display: grid;
+
+  place-items: center;
+}
+
+
+/* =========================================================
+   BACKGROUND PEOPLE
 ========================================================= */
 
 .hero-bg-person {
@@ -710,6 +758,7 @@ h1 {
     rotate(8deg);
 }
 
+
 /* =========================================================
    HERO RINGS
 ========================================================= */
@@ -720,6 +769,8 @@ h1 {
   border-radius: 50%;
 
   border: 1px solid;
+
+  pointer-events: none;
 }
 
 .ring-one {
@@ -738,8 +789,9 @@ h1 {
     rgba(78, 205, 196, 0.12);
 }
 
+
 /* =========================================================
-   HERO MAIN IMAGE
+   MAIN AMINA IMAGE
 ========================================================= */
 
 .hero-image-main {
@@ -786,8 +838,9 @@ h1 {
     );
 }
 
+
 /* =========================================================
-   HERO BACK IMAGES
+   HERO BACK CARDS
 ========================================================= */
 
 .hero-image-back {
@@ -842,6 +895,7 @@ h1 {
 
   opacity: 0.72;
 }
+
 
 /* =========================================================
    PROFILE INFO
@@ -906,6 +960,7 @@ h1 {
   vertical-align: 2px;
 }
 
+
 /* =========================================================
    FLOATING CARDS
 ========================================================= */
@@ -917,20 +972,20 @@ h1 {
 
   display: flex;
 
-  gap: 10px;
-
   align-items: center;
 
+  gap: 10px;
+
   padding: 13px 14px;
+
+  border-radius: 18px;
 
   background:
     rgba(255, 255, 255, 0.95);
 
   border:
     1px solid
-    rgba(255, 255, 255, 0.9);
-
-  border-radius: 18px;
+    rgba(255, 255, 255, 0.90);
 
   box-shadow:
     0 18px 40px
@@ -943,6 +998,10 @@ h1 {
     blur(14px);
 }
 
+.floating-card-copy {
+  min-width: 0;
+}
+
 .floating-card strong,
 .floating-card span {
   display: block;
@@ -950,32 +1009,34 @@ h1 {
 
 .floating-card strong {
   font-size: 0.77rem;
+
+  line-height: 1.2;
 }
 
 .floating-card span {
+  margin-top: 3px;
+
   color: #7b7484;
 
   font-size: 0.66rem;
-
-  margin-top: 2px;
 
   line-height: 1.35;
 }
 
 .floating-icon,
-.avatar-mini {
-  width: 34px;
-  height: 34px;
-
-  border-radius: 12px;
+.message-avatar {
+  width: 35px;
+  height: 35px;
 
   display: grid;
 
   place-items: center;
 
-  font-weight: 900;
-
   flex-shrink: 0;
+
+  border-radius: 12px;
+
+  font-weight: 900;
 }
 
 .like-icon {
@@ -989,7 +1050,7 @@ h1 {
     );
 }
 
-.avatar-mini {
+.message-avatar {
   color: #fff;
 
   background:
@@ -1000,78 +1061,75 @@ h1 {
     );
 }
 
+
 /* =========================================================
    DESKTOP BANNER POSITIONS
 ========================================================= */
 
-/* Top right, away from face */
-.like-card {
-  right: -48px;
+/*
+  Match banner sits above/right of Amina.
+  It does not sit over the face.
+*/
 
-  top: 28px;
+.like-card {
+  top: 52px;
+
+  right: -35px;
 
   transform:
     rotate(-5deg);
 }
 
-/* Lower left, away from profile information */
-.message-card {
-  left: -50px;
 
-  bottom: 55px;
+/*
+  Message banner sits lower/left.
+  It stays outside the profile information area.
+*/
+
+.message-card {
+  left: -38px;
+
+  bottom: 64px;
 
   transform:
     rotate(4deg);
 }
 
-/* =========================================================
-   MESSAGE CONTENT
-========================================================= */
-
-.message-content {
-  display: flex;
-
-  align-items: center;
-
-  gap: 10px;
-}
 
 /* =========================================================
    HERO DOWNLOAD BUTTON
-   This is OUTSIDE both banners.
+   Completely separate from the banners.
 ========================================================= */
 
 .hero-download-wrap {
-  position: absolute;
-
-  left: 50%;
-
-  bottom: -5px;
-
-  transform:
-    translateX(-50%);
+  position: relative;
 
   z-index: 10;
+
+  width: 100%;
 
   display: flex;
 
   justify-content: center;
+
+  margin-top: 28px;
 }
 
 .hero-download-btn {
-  min-width: 250px;
+  width: 285px;
 
-  min-height: 62px;
-
-  padding: 8px 14px;
+  min-height: 66px;
 
   display: flex;
 
   align-items: center;
 
-  gap: 12px;
+  gap: 13px;
 
-  border-radius: 17px;
+  padding:
+    9px 14px;
+
+  border-radius: 18px;
 
   color: #fff;
 
@@ -1101,8 +1159,8 @@ h1 {
 }
 
 .hero-download-icon {
-  width: 42px;
-  height: 42px;
+  width: 46px;
+  height: 46px;
 
   display: grid;
 
@@ -1110,20 +1168,22 @@ h1 {
 
   flex-shrink: 0;
 
-  border-radius: 12px;
+  border-radius: 13px;
 
   background:
-    rgba(255, 255, 255, 0.14);
+    rgba(255, 255, 255, 0.13);
 }
 
 .hero-download-icon img {
-  width: 29px;
-  height: 29px;
+  width: 31px;
+  height: 31px;
 
   object-fit: contain;
 }
 
-.hero-download-text {
+.hero-download-content {
+  flex: 1;
+
   display: flex;
 
   flex-direction: column;
@@ -1133,30 +1193,28 @@ h1 {
   justify-content: center;
 
   line-height: 1.15;
-
-  flex: 1;
 }
 
-.hero-download-text small {
-  font-size: 0.65rem;
-
+.hero-download-content small {
   color:
     rgba(255, 255, 255, 0.74);
+
+  font-size: 0.66rem;
 
   font-weight: 600;
 }
 
-.hero-download-text strong {
-  margin-top: 3px;
+.hero-download-content strong {
+  margin-top: 4px;
 
-  font-size: 0.94rem;
+  font-size: 1rem;
 
   font-weight: 800;
 }
 
 .hero-download-arrow {
-  width: 30px;
-  height: 30px;
+  width: 33px;
+  height: 33px;
 
   display: grid;
 
@@ -1171,6 +1229,7 @@ h1 {
 
   font-weight: 800;
 }
+
 
 /* =========================================================
    CONNECTION STRIP
@@ -1245,6 +1304,7 @@ h1 {
   background: #60a5fa;
 }
 
+
 /* =========================================================
    SECTION HEADING
 ========================================================= */
@@ -1285,6 +1345,7 @@ h1 {
 
   font-size: 1.02rem;
 }
+
 
 /* =========================================================
    FEATURE PHOTO GRID
@@ -1416,6 +1477,7 @@ h1 {
   line-height: 1.65;
 }
 
+
 /* =========================================================
    DARK EXPERIENCE
 ========================================================= */
@@ -1544,6 +1606,7 @@ h1 {
     var(--brand-yellow);
 }
 
+
 /* =========================================================
    EXPERIENCE VISUAL
 ========================================================= */
@@ -1670,6 +1733,7 @@ h1 {
 
   opacity: 0.9;
 }
+
 
 /* =========================================================
    SAFETY
@@ -1897,6 +1961,7 @@ h1 {
   color: #1a1a1a;
 }
 
+
 /* =========================================================
    PHOTO WALL
 ========================================================= */
@@ -1957,6 +2022,7 @@ h1 {
   transform:
     scale(1.08);
 }
+
 
 /* =========================================================
    DOWNLOAD SECTION
@@ -2062,6 +2128,7 @@ h1 {
     rgba(0, 0, 0, 0.15);
 }
 
+
 /* =========================================================
    DOWNLOAD BADGE
 ========================================================= */
@@ -2087,6 +2154,9 @@ h1 {
   text-align: center;
 
   backdrop-filter:
+    blur(15px);
+
+  -webkit-backdrop-filter:
     blur(15px);
 }
 
@@ -2152,6 +2222,7 @@ h1 {
 
   font-size: 0.69rem;
 }
+
 
 /* =========================================================
    FOOTER
@@ -2246,6 +2317,7 @@ h1 {
   font-size: 0.68rem;
 }
 
+
 /* =========================================================
    REVEAL ANIMATION
 ========================================================= */
@@ -2276,6 +2348,7 @@ h1 {
   transition-delay: 0.22s;
 }
 
+
 /* =========================================================
    FOCUS
 ========================================================= */
@@ -2290,6 +2363,7 @@ button:focus-visible {
 
   border-radius: 10px;
 }
+
 
 /* =========================================================
    RESPONSIVE 1050
@@ -2325,14 +2399,15 @@ button:focus-visible {
   }
 
   .like-card {
-    right: -30px;
+    right: -15px;
   }
 
   .message-card {
-    left: -30px;
+    left: -15px;
   }
 
 }
+
 
 /* =========================================================
    RESPONSIVE 820
@@ -2348,6 +2423,8 @@ button:focus-visible {
       );
   }
 
+  /* Hide desktop navigation */
+
   .desktop-nav,
   .nav-cta {
     display: none;
@@ -2356,6 +2433,9 @@ button:focus-visible {
   .menu-toggle {
     display: block;
   }
+
+
+  /* Mobile menu */
 
   .mobile-menu {
     display: grid;
@@ -2424,40 +2504,52 @@ button:focus-visible {
     gap: 8px;
   }
 
+
   /* =======================================================
      MOBILE HERO
-     Amina visual comes first.
+     Amina appears BEFORE the text.
   ======================================================= */
 
   .hero {
-    padding-top: 18px;
+    padding-top: 26px;
 
     min-height: auto;
   }
 
   .hero-grid {
+
     display: flex;
 
     flex-direction: column;
 
-    gap: 42px;
+    gap: 40px;
+
   }
 
+
+  /* =======================================================
+     VISUAL FIRST
+  ======================================================= */
+
   .hero-visual {
+
     order: 1;
 
     width: 100%;
 
-    min-height: 700px;
+    margin: 0;
 
-    padding-top: 62px;
+    min-width: 0;
 
-    padding-bottom: 82px;
-
-    overflow: visible;
   }
 
+
+  /* =======================================================
+     TEXT SECOND
+  ======================================================= */
+
   .hero-copy {
+
     order: 2;
 
     width: 100%;
@@ -2467,6 +2559,7 @@ button:focus-visible {
     text-align: center;
 
     margin-inline: auto;
+
   }
 
   .hero-copy .eyebrow,
@@ -2479,202 +2572,220 @@ button:focus-visible {
     margin-inline: auto;
   }
 
+
   /* =======================================================
-     MOBILE IMAGE
+     MOBILE MEDIA STAGE
+  ======================================================= */
+
+  .hero-media-stage {
+
+    min-height: 625px;
+
+    padding-top: 64px;
+
+    padding-bottom: 34px;
+
+  }
+
+
+  /* =======================================================
+     MOBILE MAIN AMINA
   ======================================================= */
 
   .hero-image-main {
+
     width: 320px;
 
     height: 475px;
 
     border-radius: 38px;
+
   }
 
+
+  /* =======================================================
+     MOBILE BACK CARDS
+  ======================================================= */
+
   .hero-image-back {
+
     width: 175px;
 
     height: 245px;
+
   }
 
   .back-one {
+
     left: 0;
 
-    top: 135px;
+    top: 145px;
+
   }
 
   .back-two {
+
     right: 0;
 
-    bottom: 125px;
+    bottom: 75px;
+
   }
 
+
+  /* =======================================================
+     MOBILE RINGS
+  ======================================================= */
+
   .ring-one {
+
     width: 390px;
 
     height: 390px;
+
   }
 
   .ring-two {
+
     width: 520px;
 
     height: 520px;
+
   }
+
 
   /* =======================================================
-     FLOATING CARDS
+     MOBILE MATCH BANNER
+     Above Amina — no overlap.
   ======================================================= */
 
-  .floating-card {
-    max-width: 205px;
-
-    padding: 11px 12px;
-
-    border-radius: 16px;
-  }
-
-  .floating-card strong {
-    font-size: 0.72rem;
-  }
-
-  .floating-card span {
-    font-size: 0.61rem;
-  }
-
-  .floating-icon,
-  .avatar-mini {
-    width: 31px;
-    height: 31px;
-
-    border-radius: 10px;
-  }
-
-  /*
-    Match:
-    above and outside the main image
-  */
   .like-card {
-    top: 8px;
+
+    top: 0;
 
     right: 0;
 
     transform:
       rotate(-3deg);
+
   }
 
-  /*
-    Message:
-    below image and above download button
-  */
+
+  /* =======================================================
+     MOBILE MESSAGE BANNER
+     Below Amina — no overlap.
+  ======================================================= */
+
   .message-card {
+
     left: 0;
 
-    bottom: 58px;
+    bottom: 0;
 
     transform:
       rotate(3deg);
+
   }
 
+
   /* =======================================================
-     HERO DOWNLOAD BUTTON
+     MOBILE DOWNLOAD BUTTON
      Separate from both banners.
   ======================================================= */
 
   .hero-download-wrap {
-    left: 50%;
 
-    bottom: -4px;
+    margin-top: 0;
 
-    transform:
-      translateX(-50%);
+    width: 100%;
+
   }
 
   .hero-download-btn {
-    min-width: 270px;
 
-    min-height: 64px;
+    width: min(
+      320px,
+      calc(100% - 20px)
+    );
 
-    padding:
-      9px 15px;
+    min-height: 67px;
 
     border-radius: 18px;
+
   }
 
-  .hero-download-icon {
-    width: 44px;
-
-    height: 44px;
-
-    border-radius: 13px;
-  }
-
-  .hero-download-icon img {
-    width: 31px;
-
-    height: 31px;
-  }
-
-  .hero-download-text small {
-    font-size: 0.67rem;
-  }
-
-  .hero-download-text strong {
-    font-size: 0.98rem;
-  }
 
   /* =======================================================
-     OTHER SECTIONS
+     MOBILE OTHER ELEMENTS
   ======================================================= */
 
   .person-left,
   .person-right {
+
     opacity: 0.08;
+
   }
 
   .connection-strip-inner {
+
     flex-wrap: wrap;
 
     justify-content: center;
+
   }
 
   .muted-label {
+
     width: 100%;
 
     text-align: center;
+
   }
 
   .experience-grid,
   .safety-grid {
+
     grid-template-columns: 1fr;
+
   }
 
   .experience-copy,
   .safety-copy {
+
     max-width: 720px;
+
   }
 
   .experience-visual {
+
     margin-top: 10px;
+
   }
 
   .download-box {
+
     padding:
       45px 30px;
 
     flex-direction: column;
 
     align-items: flex-start;
+
   }
 
   .download-badge {
+
     width: 100%;
+
   }
 
   .footer-grid {
+
     grid-template-columns: 1fr;
+
   }
 
 }
+
 
 /* =========================================================
    RESPONSIVE 560
@@ -2686,251 +2797,358 @@ button:focus-visible {
     padding: 82px 0;
   }
 
+
+  /* =======================================================
+     HEADER
+  ======================================================= */
+
+  .nav-wrap {
+    height: 70px;
+  }
+
+
+  /* =======================================================
+     HERO
+  ======================================================= */
+
   .hero {
+
     padding-top: 10px;
+
   }
 
   .hero-grid {
-    gap: 36px;
+
+    gap: 34px;
+
   }
+
 
   /* =======================================================
-     AMINA FIRST VIEW
+     Amina visual FIRST
   ======================================================= */
 
-  .hero-visual {
-    min-height: 635px;
+  .hero-media-stage {
 
-    padding-top: 50px;
+    min-height: 585px;
 
-    padding-bottom: 77px;
+    padding-top: 48px;
+
+    padding-bottom: 30px;
+
   }
 
+
+  /* =======================================================
+     MAIN AMINA
+  ======================================================= */
+
   .hero-image-main {
+
     width: 290px;
 
     height: 430px;
 
     border-radius: 34px;
+
   }
 
-  .hero-image-back {
-    width: 160px;
 
-    height: 230px;
+  /* =======================================================
+     BACK IMAGES
+  ======================================================= */
+
+  .hero-image-back {
+
+    width: 155px;
+
+    height: 225px;
 
     border-radius: 26px;
+
   }
 
   .back-one {
+
     left: -4px;
 
-    top: 105px;
+    top: 108px;
+
   }
 
   .back-two {
+
     right: -4px;
 
-    bottom: 103px;
+    bottom: 68px;
+
   }
 
+
+  /* =======================================================
+     RINGS
+  ======================================================= */
+
   .ring-one {
+
     width: 350px;
 
     height: 350px;
+
   }
 
   .ring-two {
+
     width: 460px;
 
     height: 460px;
+
   }
+
 
   /* =======================================================
-     PHONE FLOATING CARDS
+     MATCH BANNER
   ======================================================= */
 
-  .floating-card {
-    max-width: 185px;
-
-    padding: 10px 11px;
-
-    border-radius: 15px;
-  }
-
-  .floating-card strong {
-    font-size: 0.69rem;
-  }
-
-  .floating-card span {
-    font-size: 0.59rem;
-
-    line-height: 1.3;
-  }
-
-  .floating-icon,
-  .avatar-mini {
-    width: 29px;
-    height: 29px;
-
-    border-radius: 9px;
-  }
-
-  /* Match above Amina */
   .like-card {
+
     top: 0;
 
     right: 0;
 
     max-width: 185px;
 
+    padding:
+      10px 11px;
+
+    border-radius: 15px;
+
     transform:
       rotate(-3deg);
+
   }
 
-  /* Message below Amina */
+
+  /* =======================================================
+     MESSAGE BANNER
+  ======================================================= */
+
   .message-card {
+
     left: 0;
 
-    bottom: 51px;
+    bottom: 0;
 
     max-width: 195px;
 
+    padding:
+      10px 11px;
+
+    border-radius: 15px;
+
     transform:
       rotate(3deg);
+
   }
 
+
+  .floating-card strong {
+
+    font-size: 0.68rem;
+
+  }
+
+  .floating-card span {
+
+    font-size: 0.58rem;
+
+  }
+
+
+  .floating-icon,
+  .message-avatar {
+
+    width: 29px;
+
+    height: 29px;
+
+    border-radius: 9px;
+
+  }
+
+
   /* =======================================================
-     BIG DOWNLOAD BUTTON
-     Separate from message banner.
+     DOWNLOAD BUTTON
+     BIG + SEPARATE
   ======================================================= */
 
   .hero-download-wrap {
-    bottom: -2px;
 
     width: 100%;
 
-    padding-inline: 4px;
+    margin-top: 0;
+
   }
 
   .hero-download-btn {
-    width: min(
-      320px,
-      calc(100vw - 34px)
-    );
 
-    min-width: 0;
+    width:
+      calc(100vw - 34px);
+
+    max-width: 330px;
 
     min-height: 66px;
 
     padding:
-      9px 15px;
+      9px 14px;
+
+    gap: 12px;
 
     border-radius: 18px;
 
-    gap: 12px;
   }
 
   .hero-download-icon {
+
     width: 45px;
 
     height: 45px;
 
     border-radius: 13px;
+
   }
 
   .hero-download-icon img {
+
     width: 31px;
 
     height: 31px;
+
   }
 
-  .hero-download-text small {
-    font-size: 0.66rem;
+  .hero-download-content small {
+
+    font-size: 0.64rem;
+
   }
 
-  .hero-download-text strong {
+  .hero-download-content strong {
+
     font-size: 0.98rem;
+
   }
 
   .hero-download-arrow {
+
     width: 32px;
 
     height: 32px;
+
   }
+
 
   /* =======================================================
      HERO COPY
   ======================================================= */
 
   h1 {
+
     font-size:
       clamp(
         2.75rem,
         14vw,
         4rem
       );
+
   }
 
   .hero-text {
+
     font-size: 1rem;
+
   }
 
   .hero-actions {
+
     flex-direction: column;
+
   }
 
   .hero-actions .btn {
+
     width: 100%;
+
   }
 
+
+  /* =======================================================
+     FEATURES
+  ======================================================= */
+
   .feature-photo-grid {
+
     grid-template-columns: 1fr;
+
   }
 
   .feature-photo {
+
     height: 330px;
+
   }
 
+
+  /* =======================================================
+     EXPERIENCE
+  ======================================================= */
+
   .experience-photo-main {
+
     width: 300px;
 
     height: 420px;
+
   }
 
   .experience-photo-small {
+
     width: 125px;
 
     height: 175px;
+
   }
 
-  .small-one {
-    left: 0;
-  }
 
-  .small-two {
-    right: 0;
-  }
+  /* =======================================================
+     SAFETY
+  ======================================================= */
 
   .safety-visual {
+
     min-height: 460px;
+
   }
 
   .safety-image-card {
+
     width: 270px;
 
     height: 360px;
+
   }
 
   .safety-image-bg {
+
     width: 220px;
 
     height: 300px;
 
     left: -10px;
+
   }
 
   .shield-ring {
+
     width: 100px;
 
     height: 100px;
@@ -2938,51 +3156,89 @@ button:focus-visible {
     right: 0;
 
     top: 40px;
+
   }
 
   .shield {
+
     width: 48px;
 
     height: 58px;
+
   }
 
+
+  /* =======================================================
+     PHOTO WALL
+  ======================================================= */
+
   .photo-wall {
+
     grid-template-columns:
       repeat(2, 1fr);
+
   }
 
   .wall-image {
+
     height: 250px;
+
   }
 
   .wall-large,
   .wall-wide {
-    grid-column: 1 / -1;
+
+    grid-column:
+      1 / -1;
+
   }
 
+
+  /* =======================================================
+     DOWNLOAD SECTION
+  ======================================================= */
+
   .download-box {
+
     padding:
       38px 24px;
+
   }
 
   .download-copy .btn {
+
     width: 100%;
+
   }
 
+
+  /* =======================================================
+     FOOTER
+  ======================================================= */
+
   .footer-links {
+
     grid-template-columns:
       1fr 1fr;
+
   }
 
   .footer-links div:last-child {
-    grid-column: 1 / -1;
+
+    grid-column:
+      1 / -1;
+
   }
 
   .footer-bottom {
-    flex-direction: column;
+
+    flex-direction:
+      column;
+
   }
 
 }
+
 
 /* =========================================================
    EXTRA SMALL PHONES
@@ -2990,70 +3246,75 @@ button:focus-visible {
 
 @media (max-width: 380px) {
 
-  .hero-grid {
-    gap: 30px;
-  }
+  .hero-media-stage {
 
-  .hero-visual {
-    min-height: 610px;
+    min-height: 555px;
 
-    padding-top: 45px;
+    padding-top: 44px;
 
-    padding-bottom: 72px;
+    padding-bottom: 26px;
+
   }
 
   .hero-image-main {
+
     width: 270px;
 
     height: 400px;
+
   }
 
   .hero-image-back {
-    width: 145px;
 
-    height: 210px;
+    width: 140px;
+
+    height: 205px;
+
   }
 
   .back-one {
+
     left: -2px;
 
-    top: 98px;
+    top: 96px;
+
   }
 
   .back-two {
+
     right: -2px;
 
-    bottom: 95px;
+    bottom: 61px;
+
   }
 
   .like-card {
-    top: 0;
 
     right: -2px;
 
-    max-width: 175px;
+    max-width: 172px;
+
   }
 
   .message-card {
+
     left: -2px;
 
-    bottom: 48px;
+    max-width: 180px;
 
-    max-width: 185px;
   }
 
   .hero-download-btn {
+
     width:
       calc(100vw - 28px);
 
     min-height: 63px;
-  }
 
-  .hero-download-text strong {
-    font-size: 0.91rem;
   }
 
 }
+
 
 /* =========================================================
    REDUCED MOTION
@@ -3068,6 +3329,7 @@ button:focus-visible {
   *,
   *::before,
   *::after {
+
     animation-duration:
       0.01ms !important;
 
@@ -3076,12 +3338,15 @@ button:focus-visible {
 
     transition-duration:
       0.01ms !important;
+
   }
 
   .reveal {
+
     opacity: 1;
 
     transform: none;
+
   }
 
 }
