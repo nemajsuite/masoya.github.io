@@ -16,9 +16,14 @@
 
   --line: rgba(17, 17, 17, 0.09);
 
-  --shadow-sm: 0 12px 35px rgba(17, 17, 17, 0.08);
-  --shadow-md: 0 25px 60px rgba(17, 17, 17, 0.12);
-  --shadow-lg: 0 35px 90px rgba(17, 17, 17, 0.18);
+  --shadow-sm:
+    0 12px 35px rgba(17, 17, 17, 0.08);
+
+  --shadow-md:
+    0 25px 60px rgba(17, 17, 17, 0.12);
+
+  --shadow-lg:
+    0 35px 90px rgba(17, 17, 17, 0.18);
 
   --radius: 28px;
 
@@ -109,23 +114,32 @@ button {
   position: fixed;
   width: 480px;
   height: 480px;
+
   border-radius: 50%;
+
   filter: blur(80px);
+
   pointer-events: none;
+
   z-index: -1;
+
   opacity: 0.34;
 }
 
 .glow-one {
   top: 80px;
   left: -220px;
-  background: rgba(255, 13, 27, 0.2);
+
+  background:
+    rgba(255, 13, 27, 0.2);
 }
 
 .glow-two {
   top: 420px;
   right: -240px;
-  background: rgba(78, 205, 196, 0.2);
+
+  background:
+    rgba(78, 205, 196, 0.2);
 }
 
 /* =========================================================
@@ -135,10 +149,12 @@ button {
 .site-header {
   position: sticky;
   top: 0;
+
   z-index: 50;
 
   border-bottom:
-    1px solid rgba(17, 17, 17, 0.07);
+    1px solid
+    rgba(17, 17, 17, 0.07);
 
   background:
     rgba(255, 255, 255, 0.82);
@@ -159,6 +175,7 @@ button {
 
 .brand {
   display: inline-flex;
+
   align-items: center;
 
   gap: 10px;
@@ -166,24 +183,54 @@ button {
   font-weight: 800;
 }
 
+/* =========================================================
+   ROUNDED LOGO
+========================================================= */
+
+.logo-box {
+  width: 36px;
+  height: 36px;
+
+  display: grid;
+  place-items: center;
+
+  overflow: hidden;
+
+  border-radius: 11px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 8px 22px
+    rgba(255, 13, 27, 0.20);
+
+  flex-shrink: 0;
+}
+
 .brand-mark {
-  width: 34px;
-  height: 34px;
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+
+  border-radius: 11px;
 
   filter:
     drop-shadow(
-      0 8px 20px
-      rgba(255, 13, 27, 0.24)
+      0 5px 14px
+      rgba(255, 13, 27, 0.18)
     );
 }
 
 .brand-name {
   font-size: 1.17rem;
+
   letter-spacing: -0.03em;
 }
 
 .desktop-nav {
   display: flex;
+
   align-items: center;
 
   gap: 30px;
@@ -193,6 +240,7 @@ button {
 
 .desktop-nav a {
   font-size: 0.92rem;
+
   color: #666;
 
   font-weight: 600;
@@ -212,7 +260,12 @@ button {
 
   color: #fff;
 
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
   font-weight: 800;
+
   font-size: 0.88rem;
 
   background:
@@ -232,11 +285,38 @@ button {
 }
 
 .nav-cta:hover {
-  transform: translateY(-2px);
+  transform:
+    translateY(-2px);
 
   box-shadow:
     0 15px 28px
     rgba(255, 13, 27, 0.28);
+}
+
+/* =========================================================
+   GOOGLE PLAY ICON
+========================================================= */
+
+.play-store-icon {
+  width: 24px;
+  height: 24px;
+
+  display: inline-grid;
+  place-items: center;
+
+  flex-shrink: 0;
+}
+
+.play-store-icon svg {
+  width: 100%;
+  height: 100%;
+
+  display: block;
+}
+
+.play-store-icon.small {
+  width: 18px;
+  height: 18px;
 }
 
 .menu-toggle {
@@ -282,6 +362,7 @@ button {
   min-height: 740px;
 
   position: relative;
+
   overflow: hidden;
 }
 
@@ -301,6 +382,7 @@ button {
   max-width: 650px;
 
   position: relative;
+
   z-index: 3;
 }
 
@@ -410,7 +492,8 @@ h1 {
 }
 
 .btn:hover {
-  transform: translateY(-2px);
+  transform:
+    translateY(-2px);
 }
 
 .btn-primary {
@@ -427,22 +510,6 @@ h1 {
   box-shadow:
     0 18px 35px
     rgba(255, 13, 27, 0.27);
-}
-
-.play-icon {
-  width: 23px;
-  height: 23px;
-
-  border-radius: 8px;
-
-  display: inline-grid;
-
-  place-items: center;
-
-  font-size: 9px;
-
-  background:
-    rgba(255, 255, 255, 0.17);
 }
 
 .text-link {
@@ -561,7 +628,8 @@ h1 {
   left: -50px;
   top: 20px;
 
-  transform: rotate(-10deg);
+  transform:
+    rotate(-10deg);
 }
 
 .person-right {
@@ -571,7 +639,8 @@ h1 {
   right: -40px;
   bottom: 40px;
 
-  transform: rotate(8deg);
+  transform:
+    rotate(8deg);
 }
 
 .hero-bg-ring {
@@ -614,7 +683,8 @@ h1 {
     rotate(4deg);
 
   border:
-    7px solid rgba(255, 255, 255, 0.88);
+    7px solid
+    rgba(255, 255, 255, 0.88);
 
   box-shadow:
     0 35px 90px
@@ -708,6 +778,7 @@ h1 {
 
 .hero-profile-name {
   font-size: 1.35rem;
+
   font-weight: 800;
 }
 
@@ -906,7 +977,8 @@ h1 {
 
   border-radius: 50%;
 
-  background: var(--brand-turquoise);
+  background:
+    var(--brand-turquoise);
 
   box-shadow:
     0 0 0 5px
@@ -1025,7 +1097,8 @@ h1 {
 
 .feature-photo-card:hover
 .feature-photo img {
-  transform: scale(1.06);
+  transform:
+    scale(1.06);
 }
 
 .feature-photo-gradient {
@@ -1629,7 +1702,8 @@ h1 {
 }
 
 .wall-image:hover img {
-  transform: scale(1.08);
+  transform:
+    scale(1.08);
 }
 
 /* =========================================================
@@ -1758,6 +1832,7 @@ h1 {
   backdrop-filter: blur(15px);
 }
 
+/* Rounded logo inside download badge */
 .badge-icon {
   width: 65px;
   height: 65px;
@@ -1773,11 +1848,17 @@ h1 {
 
   background:
     rgba(255, 255, 255, 0.12);
+
+  overflow: hidden;
 }
 
-.badge-icon img {
-  width: 40px;
-  height: 40px;
+.logo-badge img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+
+  border-radius: 20px;
 }
 
 .download-badge strong {
@@ -2065,8 +2146,15 @@ button:focus-visible {
         var(--brand-red-dark)
       );
 
-    padding:
-      13px;
+    padding: 13px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 8px;
   }
 
   .hero {
@@ -2137,7 +2225,6 @@ button:focus-visible {
   .footer-grid {
     grid-template-columns: 1fr;
   }
-
 }
 
 /* =========================================================
@@ -2327,10 +2414,14 @@ button:focus-visible {
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
+    animation-duration:
+      0.01ms !important;
 
-    transition-duration: 0.01ms !important;
+    animation-iteration-count:
+      1 !important;
+
+    transition-duration:
+      0.01ms !important;
   }
 
   .reveal {
