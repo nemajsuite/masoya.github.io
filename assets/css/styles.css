@@ -1072,10 +1072,8 @@ h1 {
 */
 
 .like-card {
-  top: 70px;
-  
-  right: -8px;
-  
+  top: 52px;
+  right: -20px;
   transform: rotate(-5deg);
 }
 
@@ -1086,10 +1084,8 @@ h1 {
 */
 
 .message-card {
-  left: -18px;
-  
-  bottom: 80px;
-  
+  left: -38px;
+  bottom: 64px;
   transform: rotate(4deg);
 }
 
@@ -2657,15 +2653,10 @@ button:focus-visible {
   ======================================================= */
 
   .like-card {
-
-    top: 0;
-
-    right: 0;
-
-    transform:
-      rotate(-3deg);
-
-  }
+  top: 18px;
+  right: 8px;
+  transform: rotate(-3deg);
+}
 
 
   /* =======================================================
@@ -2673,16 +2664,11 @@ button:focus-visible {
      Below Amina — no overlap.
   ======================================================= */
 
-  .message-card {
-
-    left: 0;
-
-    bottom: 0;
-
-    transform:
-      rotate(3deg);
-
-  }
+ .message-card {
+  left: 8px;
+  bottom: 18px;
+  transform: rotate(3deg);
+}
 
 
   /* =======================================================
