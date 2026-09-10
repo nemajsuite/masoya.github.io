@@ -28,7 +28,10 @@
     href="https://masoyaapp.github.io/"
   >
 
-  <!-- Open Graph -->
+  <!-- =======================================================
+       OPEN GRAPH
+  ======================================================== -->
+
   <meta
     property="og:title"
     content="Masoya — Meet. Match. Connect."
@@ -54,7 +57,6 @@
     content="Masoya"
   >
 
-  <!-- Optional Social Preview -->
   <!--
   <meta
     property="og:image"
@@ -62,22 +64,31 @@
   >
   -->
 
-  <title>Masoya — Meet. Match. Connect.</title>
 
-  <!-- Favicon -->
+  <!-- =======================================================
+       TITLE / FAVICON / MANIFEST
+  ======================================================== -->
+
+  <title>
+    Masoya — Meet. Match. Connect.
+  </title>
+
   <link
     rel="icon"
     href="assets/logo.svg"
     type="image/svg+xml"
   >
 
-  <!-- Manifest -->
   <link
     rel="manifest"
     href="site.webmanifest"
   >
 
-  <!-- Google Fonts -->
+
+  <!-- =======================================================
+       FONTS
+  ======================================================== -->
+
   <link
     rel="preconnect"
     href="https://fonts.googleapis.com"
@@ -94,18 +105,24 @@
     rel="stylesheet"
   >
 
-  <!-- CSS -->
+
+  <!-- =======================================================
+       CSS
+  ======================================================== -->
+
   <link
     rel="stylesheet"
     href="assets/css/styles.css"
   >
 </head>
 
+
 <body>
 
-  <!-- =========================================================
-       BACKGROUND GLOW
-  ========================================================== -->
+
+  <!-- =======================================================
+       BACKGROUND GLOWS
+  ======================================================== -->
 
   <div
     class="page-glow glow-one"
@@ -118,9 +135,9 @@
   ></div>
 
 
-  <!-- =========================================================
+  <!-- =======================================================
        HEADER
-  ========================================================== -->
+  ======================================================== -->
 
   <header
     class="site-header"
@@ -128,6 +145,9 @@
   >
 
     <div class="container nav-wrap">
+
+
+      <!-- Brand -->
 
       <a
         class="brand"
@@ -178,7 +198,7 @@
       </nav>
 
 
-      <!-- Desktop CTA -->
+      <!-- Desktop Download -->
 
       <a
         class="nav-cta"
@@ -220,7 +240,9 @@
     </div>
 
 
-    <!-- Mobile Menu -->
+    <!-- =====================================================
+         MOBILE MENU
+    ====================================================== -->
 
     <div
       class="mobile-menu"
@@ -242,6 +264,7 @@
       <a href="#download">
         Download
       </a>
+
 
       <a
         class="mobile-cta"
@@ -268,20 +291,24 @@
   </header>
 
 
-  <!-- =========================================================
+  <!-- =======================================================
        MAIN
-  ========================================================== -->
+  ======================================================== -->
 
   <main>
 
 
-    <!-- =======================================================
+    <!-- =====================================================
          HERO
-    ======================================================== -->
+    ====================================================== -->
 
-    <section class="hero section">
+    <section
+      class="hero section"
+      aria-labelledby="hero-title"
+    >
 
-      <!-- Decorative People -->
+
+      <!-- Decorative Background People -->
 
       <div
         class="hero-bg-person person-left"
@@ -327,186 +354,9 @@
       <div class="container hero-grid">
 
 
-        <!-- ===================================================
-             HERO VISUAL
-             On mobile this comes FIRST
-        ==================================================== -->
-
-        <div
-          class="hero-visual reveal reveal-delay"
-        >
-
-          <!-- Back Card -->
-
-          <div class="hero-image-back back-one">
-
-            <img
-              src="assets/images/amina.jpg"
-              alt=""
-              loading="lazy"
-            >
-
-          </div>
-
-
-          <!-- Back Card -->
-
-          <div class="hero-image-back back-two">
-
-            <img
-              src="assets/images/amina.jpg"
-              alt=""
-              loading="lazy"
-            >
-
-          </div>
-
-
-          <!-- Main Amina Card -->
-
-          <div class="hero-image-main">
-
-            <img
-              src="assets/images/amina.jpg"
-              alt="Amina"
-            >
-
-            <div class="hero-image-overlay"></div>
-
-
-            <!-- Profile information -->
-
-            <div class="hero-profile-info">
-
-              <div class="hero-profile-name">
-
-                Amina, 24
-
-                <span class="verified">
-                  ✓
-                </span>
-
-              </div>
-
-
-              <div class="hero-profile-location">
-                ⌖ Kano · 3 km away
-              </div>
-
-
-              <div class="hero-profile-bio">
-                Easygoing, ambitious, and always ready
-                for a good conversation.
-              </div>
-
-            </div>
-
-          </div>
-
-
-          <!-- =================================================
-               MATCH FLOATING CARD
-          ================================================== -->
-
-          <div class="floating-card like-card">
-
-            <div class="floating-icon like-icon">
-              ♥
-            </div>
-
-            <div>
-
-              <strong>
-                It's a match
-              </strong>
-
-              <span>
-                You both liked each other
-              </span>
-
-            </div>
-
-          </div>
-
-
-          <!-- =================================================
-               MESSAGE FLOATING CARD
-          ================================================== -->
-
-          <div class="floating-card message-card">
-
-            <div class="message-content">
-
-              <div class="avatar-mini">
-                M
-              </div>
-
-              <div>
-
-                <strong>
-                  New message
-                </strong>
-
-                <span>
-                  Hey, nice to meet you ✨
-                </span>
-
-              </div>
-
-            </div>
-
-          </div>
-
-
-          <!-- =================================================
-               MOBILE / HERO DOWNLOAD BUTTON
-               OUTSIDE THE BANNERS
-          ================================================== -->
-
-          <div class="hero-download-wrap">
-
-            <a
-              class="hero-download-btn"
-              href="https://play.google.com/store/apps/details?id=com.nemaj.masoya"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-
-              <span class="hero-download-icon">
-
-                <img
-                  src="assets/images/google-play.png"
-                  alt=""
-                >
-
-              </span>
-
-              <span class="hero-download-text">
-
-                <small>
-                  Available on
-                </small>
-
-                <strong>
-                  Google Play
-                </strong>
-
-              </span>
-
-              <span class="hero-download-arrow">
-                →
-              </span>
-
-            </a>
-
-          </div>
-
-        </div>
-
-
-        <!-- ===================================================
+        <!-- =================================================
              HERO COPY
-        ==================================================== -->
+        ================================================== -->
 
         <div class="hero-copy reveal">
 
@@ -519,7 +369,7 @@
           </div>
 
 
-          <h1>
+          <h1 id="hero-title">
 
             Meet people who feel
 
@@ -531,9 +381,11 @@
 
 
           <p class="hero-text">
+
             Discover people, send a like, make a match,
             and start a real conversation — all in one
             simple and beautiful experience.
+
           </p>
 
 
@@ -603,22 +455,216 @@
 
         </div>
 
+
+        <!-- =================================================
+             HERO VISUAL
+             This becomes FIRST on mobile
+        ================================================== -->
+
+        <div
+          class="hero-visual reveal reveal-delay"
+        >
+
+
+          <!-- ===============================================
+               IMAGE STAGE
+          ================================================ -->
+
+          <div class="hero-media-stage">
+
+
+            <!-- Back Image -->
+
+            <div class="hero-image-back back-one">
+
+              <img
+                src="assets/images/amina.jpg"
+                alt=""
+                loading="lazy"
+              >
+
+            </div>
+
+
+            <!-- Back Image -->
+
+            <div class="hero-image-back back-two">
+
+              <img
+                src="assets/images/amina.jpg"
+                alt=""
+                loading="lazy"
+              >
+
+            </div>
+
+
+            <!-- Main Amina Profile -->
+
+            <div class="hero-image-main">
+
+              <img
+                src="assets/images/amina.jpg"
+                alt="Amina"
+              >
+
+
+              <div class="hero-image-overlay"></div>
+
+
+              <div class="hero-profile-info">
+
+                <div class="hero-profile-name">
+
+                  Amina, 24
+
+                  <span class="verified">
+                    ✓
+                  </span>
+
+                </div>
+
+
+                <div class="hero-profile-location">
+                  ⌖ Kano · 3 km away
+                </div>
+
+
+                <div class="hero-profile-bio">
+
+                  Easygoing, ambitious, and always ready
+                  for a good conversation.
+
+                </div>
+
+              </div>
+
+            </div>
+
+
+            <!-- =============================================
+                 MATCH BANNER
+            ============================================== -->
+
+            <div class="floating-card like-card">
+
+              <div class="floating-icon like-icon">
+                ♥
+              </div>
+
+
+              <div class="floating-card-copy">
+
+                <strong>
+                  It's a match
+                </strong>
+
+                <span>
+                  You both liked each other
+                </span>
+
+              </div>
+
+            </div>
+
+
+            <!-- =============================================
+                 MESSAGE BANNER
+            ============================================== -->
+
+            <div class="floating-card message-card">
+
+              <div class="message-avatar">
+                M
+              </div>
+
+
+              <div class="floating-card-copy">
+
+                <strong>
+                  New message
+                </strong>
+
+                <span>
+                  Hey, nice to meet you ✨
+                </span>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <!-- ===============================================
+               SEPARATE DOWNLOAD BUTTON
+               NOT INSIDE ANY BANNER
+          ================================================ -->
+
+          <div class="hero-download-wrap">
+
+            <a
+              class="hero-download-btn"
+              href="https://play.google.com/store/apps/details?id=com.nemaj.masoya"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+
+              <span class="hero-download-icon">
+
+                <img
+                  src="assets/images/google-play.png"
+                  alt=""
+                >
+
+              </span>
+
+
+              <span class="hero-download-content">
+
+                <small>
+                  Available now on
+                </small>
+
+                <strong>
+                  Google Play
+                </strong>
+
+              </span>
+
+
+              <span class="hero-download-arrow">
+                →
+              </span>
+
+            </a>
+
+          </div>
+
+
+        </div>
+
       </div>
 
     </section>
 
 
-    <!-- =========================================================
+    <!-- =====================================================
          CONNECTION STRIP
-    ========================================================== -->
+    ====================================================== -->
 
-    <section class="connection-strip section-sm">
+    <section
+      class="connection-strip section-sm"
+    >
 
-      <div class="container connection-strip-inner">
+      <div
+        class="container connection-strip-inner"
+      >
 
         <span class="muted-label">
           BUILT FOR SIMPLE CONNECTIONS
         </span>
+
 
         <div class="mini-feature">
 
@@ -660,9 +706,9 @@
     </section>
 
 
-    <!-- =========================================================
+    <!-- =====================================================
          FEATURES
-    ========================================================== -->
+    ====================================================== -->
 
     <section
       class="section features-section"
@@ -670,6 +716,7 @@
     >
 
       <div class="container">
+
 
         <div class="section-heading reveal">
 
@@ -690,9 +737,11 @@
 
 
           <p>
+
             Masoya keeps the experience focused:
             discover people, understand the profile,
             choose your action, and keep the conversation going.
+
           </p>
 
         </div>
@@ -703,7 +752,9 @@
 
           <!-- Discover -->
 
-          <article class="feature-photo-card reveal">
+          <article
+            class="feature-photo-card reveal"
+          >
 
             <div class="feature-photo">
 
@@ -733,9 +784,11 @@
               </h3>
 
               <p>
+
                 Browse real profiles in a smooth
                 experience and discover people
                 who catch your attention.
+
               </p>
 
             </div>
@@ -777,9 +830,11 @@
               </h3>
 
               <p>
+
                 Show interest when someone catches
                 your attention. Mutual interest becomes
                 a meaningful match.
+
               </p>
 
             </div>
@@ -821,9 +876,11 @@
               </h3>
 
               <p>
+
                 Move from a profile to a private
                 conversation and start getting
                 to know each other.
+
               </p>
 
             </div>
@@ -833,7 +890,9 @@
 
           <!-- Profile -->
 
-          <article class="feature-photo-card reveal">
+          <article
+            class="feature-photo-card reveal"
+          >
 
             <div class="feature-photo">
 
@@ -863,9 +922,11 @@
               </h3>
 
               <p>
+
                 Shape how your profile appears
                 and control how you interact
                 with people you meet.
+
               </p>
 
             </div>
@@ -879,9 +940,9 @@
     </section>
 
 
-    <!-- =========================================================
+    <!-- =====================================================
          EXPERIENCE
-    ========================================================== -->
+    ====================================================== -->
 
     <section
       class="section dark-section"
@@ -898,13 +959,16 @@
 
       </div>
 
+
       <div class="experience-bg-overlay"></div>
 
 
       <div class="container experience-grid">
 
 
-        <div class="experience-copy reveal">
+        <div
+          class="experience-copy reveal"
+        >
 
           <div class="eyebrow eyebrow-light">
             A better flow
@@ -924,9 +988,11 @@
 
 
           <p>
+
             Masoya combines visual discovery with
             simple actions so the important part —
             getting to know someone — stays at the center.
+
           </p>
 
 
@@ -1003,7 +1069,9 @@
         </div>
 
 
-        <div class="experience-visual reveal reveal-delay">
+        <div
+          class="experience-visual reveal reveal-delay"
+        >
 
           <div class="experience-photo-main">
 
@@ -1059,9 +1127,9 @@
     </section>
 
 
-    <!-- =========================================================
+    <!-- =====================================================
          SAFETY
-    ========================================================== -->
+    ====================================================== -->
 
     <section
       class="section safety-section"
@@ -1113,7 +1181,9 @@
         </div>
 
 
-        <div class="safety-copy reveal reveal-delay">
+        <div
+          class="safety-copy reveal reveal-delay"
+        >
 
           <div class="eyebrow">
             Built with control in mind
@@ -1132,9 +1202,11 @@
 
 
           <p>
+
             Masoya includes profile visibility controls,
             location visibility preferences, and blocking
             tools so you can shape your experience.
+
           </p>
 
 
@@ -1215,13 +1287,14 @@
     </section>
 
 
-    <!-- =========================================================
+    <!-- =====================================================
          PHOTO WALL
-    ========================================================== -->
+    ====================================================== -->
 
     <section class="photo-wall-section">
 
       <div class="photo-wall">
+
 
         <div class="wall-image wall-large">
 
@@ -1293,9 +1366,9 @@
     </section>
 
 
-    <!-- =========================================================
+    <!-- =====================================================
          DOWNLOAD
-    ========================================================== -->
+    ====================================================== -->
 
     <section
       class="section"
@@ -1303,6 +1376,7 @@
     >
 
       <div class="container">
+
 
         <div class="download-box reveal">
 
@@ -1340,8 +1414,10 @@
 
 
             <p>
+
               Download Masoya and discover a cleaner,
               more focused way to meet people.
+
             </p>
 
 
@@ -1408,9 +1484,9 @@
   </main>
 
 
-  <!-- =========================================================
+  <!-- =======================================================
        FOOTER
-  ========================================================== -->
+  ======================================================== -->
 
   <footer class="site-footer">
 
@@ -1518,7 +1594,6 @@
 
         </div>
 
-
       </div>
 
     </div>
@@ -1527,10 +1602,13 @@
     <div class="container footer-bottom">
 
       <span>
+
         ©
         <span id="year"></span>
         Masoya. All rights reserved.
+
       </span>
+
 
       <span>
         Made for meaningful connections.
@@ -1541,9 +1619,9 @@
   </footer>
 
 
-  <!-- =========================================================
+  <!-- =======================================================
        JAVASCRIPT
-  ========================================================== -->
+  ======================================================== -->
 
   <script
     src="assets/js/main.js"
