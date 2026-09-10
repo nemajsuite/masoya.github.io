@@ -886,6 +886,7 @@ h1 {
 
 /* =========================================================
    FLOATING CARDS
+   Repositioned so they do not cover Amina's face/details
 ========================================================= */
 
 .floating-card {
@@ -902,11 +903,11 @@ h1 {
   padding: 13px 14px;
 
   background:
-    rgba(255, 255, 255, 0.91);
+    rgba(255, 255, 255, 0.94);
 
   border:
     1px solid
-    rgba(255, 255, 255, 0.85);
+    rgba(255, 255, 255, 0.88);
 
   border-radius: 18px;
 
@@ -916,6 +917,11 @@ h1 {
 
   backdrop-filter:
     blur(14px);
+
+  -webkit-backdrop-filter:
+    blur(14px);
+
+  max-width: 220px;
 }
 
 .floating-card strong,
@@ -947,6 +953,8 @@ h1 {
   place-items: center;
 
   font-weight: 900;
+
+  flex-shrink: 0;
 }
 
 .like-icon {
@@ -971,17 +979,23 @@ h1 {
     );
 }
 
+/* Match banner:
+   moved higher and further right */
 .like-card {
-  right: -15px;
-  top: 145px;
+  right: -48px;
+
+  top: 42px;
 
   transform:
     rotate(-5deg);
 }
 
+/* Message banner:
+   moved lower and further left */
 .message-card {
-  left: -25px;
-  bottom: 100px;
+  left: -48px;
+
+  bottom: 34px;
 
   transform:
     rotate(4deg);
@@ -1924,7 +1938,6 @@ h1 {
   overflow: hidden;
 }
 
-/* Rounded Masoya logo */
 .logo-badge img {
   width: 100%;
   height: 100%;
@@ -2370,14 +2383,49 @@ button:focus-visible {
     height: 460px;
   }
 
+  /* =======================================================
+     MOBILE FLOATING CARDS
+     Keep banners but move them away from Amina
+  ======================================================= */
+
+  .floating-card {
+    max-width: 200px;
+
+    padding: 11px 12px;
+  }
+
+  .floating-card strong {
+    font-size: 0.72rem;
+  }
+
+  .floating-card span {
+    font-size: 0.61rem;
+  }
+
+  .floating-icon,
+  .avatar-mini {
+    width: 31px;
+    height: 31px;
+
+    border-radius: 10px;
+  }
+
   .like-card {
-    right: -5px;
-    top: 95px;
+    right: -8px;
+
+    top: 55px;
+
+    transform:
+      rotate(-4deg);
   }
 
   .message-card {
-    left: -5px;
-    bottom: 65px;
+    left: -8px;
+
+    bottom: 20px;
+
+    transform:
+      rotate(4deg);
   }
 
   .person-left,
@@ -2473,6 +2521,39 @@ button:focus-visible {
 
   .footer-bottom {
     flex-direction: column;
+  }
+
+}
+
+/* =========================================================
+   EXTRA SMALL MOBILE
+========================================================= */
+
+@media (max-width: 380px) {
+
+  .hero-visual {
+    min-height: 500px;
+  }
+
+  .hero-image-main {
+    width: 270px;
+    height: 400px;
+  }
+
+  .floating-card {
+    max-width: 185px;
+
+    padding: 10px 11px;
+  }
+
+  .like-card {
+    right: -4px;
+    top: 42px;
+  }
+
+  .message-card {
+    left: -4px;
+    bottom: 12px;
   }
 
 }
