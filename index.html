@@ -1,1702 +1,6945 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="utf-8">
-
+  <meta charset="UTF-8" />
   <meta
     name="viewport"
-    content="width=device-width, initial-scale=1"
-  >
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  />
+
+  <title>Masoya Dating · Advanced Admin Panel</title>
 
   <meta
     name="description"
-    content="Masoya — discover people, make meaningful matches, and chat with people you connect with."
-  >
+    content="Masoya Dating Advanced Admin Panel"
+  />
 
-  <meta
-    name="theme-color"
-    content="#FF0D1B"
-  >
-
-  <meta
-    name="robots"
-    content="index, follow"
-  >
-
-  <!-- =======================================================
-       CANONICAL
-  ======================================================== -->
-
-  <link
-    rel="canonical"
-    href="https://nemajsuite.github.io/"
-  >
-
-
-  <!-- =======================================================
-       OPEN GRAPH
-  ======================================================== -->
-
-  <meta
-    property="og:title"
-    content="Masoya — Meet. Match. Connect."
-  >
-
-  <meta
-    property="og:description"
-    content="A modern dating experience built around discovery, genuine connections, and private conversations."
-  >
-
-  <meta
-    property="og:type"
-    content="website"
-  >
-
-  <meta
-    property="og:url"
-    content="https://nemajsuite.github.io/"
-  >
-
-  <meta
-    property="og:site_name"
-    content="Masoya"
-  >
-
-  <!--
-  <meta
-    property="og:image"
-    content="https://nemajsuite.github.io/assets/images/social-preview.jpg"
-  >
-  -->
-
-
-  <!-- =======================================================
-       TITLE / FAVICON
-  ======================================================== -->
-
-  <title>
-    Masoya — Meet. Match. Connect.
-  </title>
-
-
-  <link
-    rel="icon"
-    href="assets/logo.svg"
-    type="image/svg+xml"
-  >
-
-
-  <!-- =======================================================
-       NOTE:
-       site.webmanifest intentionally NOT linked.
-       This prevents the landing page from advertising itself
-       as an installable PWA.
-  ======================================================== -->
-
-
-  <!-- =======================================================
-       GOOGLE FONTS
-  ======================================================== -->
-
+  <!-- =========================================================
+       FONTS
+  ========================================================== -->
   <link
     rel="preconnect"
     href="https://fonts.googleapis.com"
-  >
-
+  />
   <link
     rel="preconnect"
     href="https://fonts.gstatic.com"
     crossorigin
-  >
-
+  />
   <link
-    href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
     rel="stylesheet"
-  >
+  />
 
-
-  <!-- =======================================================
-       CSS
-  ======================================================== -->
-
+  <!-- =========================================================
+       FONT AWESOME
+  ========================================================== -->
   <link
     rel="stylesheet"
-    href="assets/css/styles.css"
-  >
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
 
+  <!-- =========================================================
+       CHART.JS
+  ========================================================== -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root {
+      --primary: #ff0d1b;
+      --primary-dark: #d90412;
+      --primary-light: #fff1f2;
+
+      --teal: #4ecdc4;
+      --yellow: #ffd166;
+
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+
+      --success: #16a34a;
+      --warning: #d97706;
+      --danger: #dc2626;
+      --info: #2563eb;
+
+      --sidebar-width: 260px;
+      --radius: 16px;
+
+      --shadow:
+        0 10px 30px rgba(15, 23, 42, 0.07);
+
+      --transition: 0.2s ease;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: "Inter", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    img {
+      max-width: 100%;
+      display: block;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* =========================================================
+       LOGIN
+    ========================================================== */
+
+    #loginScreen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background:
+        radial-gradient(
+          circle at top left,
+          rgba(255, 13, 27, 0.08),
+          transparent 35%
+        ),
+        radial-gradient(
+          circle at bottom right,
+          rgba(78, 205, 196, 0.10),
+          transparent 35%
+        ),
+        var(--bg);
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 430px;
+      background: white;
+      border-radius: 24px;
+      padding: 32px;
+      box-shadow: 0 24px 70px rgba(15, 23, 42, 0.12);
+      border: 1px solid rgba(229, 231, 235, 0.8);
+    }
+
+    .login-logo {
+      width: 72px;
+      height: 72px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, var(--primary), #ff5e7c);
+      color: white;
+      display: grid;
+      place-items: center;
+      font-size: 28px;
+      margin: 0 auto 18px;
+      box-shadow: 0 12px 30px rgba(255, 13, 27, 0.22);
+    }
+
+    .login-card h1 {
+      text-align: center;
+      font-size: 25px;
+      margin-bottom: 8px;
+    }
+
+    .login-card p {
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 25px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      margin-bottom: 7px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #374151;
+    }
+
+    .input,
+    .select,
+    .textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: white;
+      padding: 12px 14px;
+      outline: none;
+      color: var(--text);
+      transition: var(--transition);
+    }
+
+    .input:focus,
+    .select:focus,
+    .textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(255, 13, 27, 0.08);
+    }
+
+    .textarea {
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 10px;
+      padding: 10px 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      font-weight: 700;
+      font-size: 13px;
+      transition: var(--transition);
+      min-height: 40px;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-primary {
+      color: white;
+      background: var(--primary);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+    }
+
+    .btn-secondary {
+      color: #374151;
+      background: #f3f4f6;
+    }
+
+    .btn-success {
+      color: white;
+      background: var(--success);
+    }
+
+    .btn-warning {
+      color: white;
+      background: var(--warning);
+    }
+
+    .btn-danger {
+      color: white;
+      background: var(--danger);
+    }
+
+    .btn-info {
+      color: white;
+      background: var(--info);
+    }
+
+    .btn-outline {
+      color: var(--text);
+      background: white;
+      border: 1px solid var(--border);
+    }
+
+    .btn-sm {
+      padding: 7px 9px;
+      min-height: 34px;
+      font-size: 12px;
+    }
+
+    .login-error {
+      margin-top: 13px;
+      border-radius: 10px;
+      padding: 11px 12px;
+      background: #fef2f2;
+      color: #b91c1c;
+      font-size: 13px;
+      border: 1px solid #fecaca;
+    }
+
+    /* =========================================================
+       APP LAYOUT
+    ========================================================== */
+
+    #app {
+      display: none;
+      min-height: 100vh;
+    }
+
+    .app-shell {
+      min-height: 100vh;
+      display: flex;
+    }
+
+    .sidebar {
+      width: var(--sidebar-width);
+      background: #111827;
+      color: white;
+      position: fixed;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      z-index: 1200;
+      padding: 18px 14px;
+      overflow-y: auto;
+      transition: transform 0.25s ease;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 10px;
+      margin-bottom: 20px;
+    }
+
+    .brand-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      background:
+        linear-gradient(135deg, var(--primary), #ff5e7c);
+      color: white;
+      font-size: 18px;
+      box-shadow: 0 8px 20px rgba(255, 13, 27, 0.25);
+      flex-shrink: 0;
+    }
+
+    .brand-text strong {
+      display: block;
+      font-size: 15px;
+    }
+
+    .brand-text span {
+      display: block;
+      color: #9ca3af;
+      font-size: 11px;
+      margin-top: 2px;
+    }
+
+    .nav-title {
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 0 10px;
+      margin: 18px 0 8px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      border: none;
+      background: transparent;
+      color: #cbd5e1;
+      padding: 12px 12px;
+      border-radius: 10px;
+      text-align: left;
+      margin-bottom: 4px;
+      transition: var(--transition);
+    }
+
+    .nav-item i {
+      width: 18px;
+      text-align: center;
+    }
+
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: white;
+    }
+
+    .nav-item.active {
+      background: var(--primary);
+      color: white;
+    }
+
+    .sidebar-footer {
+      position: sticky;
+      bottom: 0;
+      margin-top: 25px;
+      padding-top: 15px;
+      background: #111827;
+    }
+
+    .admin-mini {
+      border-radius: 12px;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      margin-bottom: 10px;
+    }
+
+    .admin-mini small {
+      display: block;
+      color: #9ca3af;
+      font-size: 10px;
+      margin-bottom: 5px;
+    }
+
+    .admin-mini strong {
+      font-size: 12px;
+      word-break: break-all;
+    }
+
+    .main {
+      width: calc(100% - var(--sidebar-width));
+      margin-left: var(--sidebar-width);
+      min-height: 100vh;
+    }
+
+    .topbar {
+      height: 70px;
+      background: rgba(255, 255, 255, 0.92);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 22px;
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .mobile-menu-btn {
+      display: none;
+      width: 40px;
+      height: 40px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: white;
+    }
+
+    .page-title {
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .page-subtitle {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      background: #ecfdf5;
+      color: #047857;
+      border: 1px solid #a7f3d0;
+      padding: 6px 10px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .content {
+      padding: 22px;
+    }
+
+    /* =========================================================
+       PAGES
+    ========================================================== */
+
+    .page {
+      display: none;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    .section-head {
+      margin-bottom: 18px;
+    }
+
+    .section-head h2 {
+      font-size: 19px;
+      margin-bottom: 5px;
+    }
+
+    .section-head p {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    /* =========================================================
+       STATS
+    ========================================================== */
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .stat-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .stat-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      font-size: 15px;
+    }
+
+    .stat-value {
+      font-size: 25px;
+      font-weight: 800;
+      margin-top: 12px;
+    }
+
+    .stat-note {
+      color: var(--muted);
+      font-size: 11px;
+      margin-top: 5px;
+    }
+
+    .icon-red {
+      background: #fff1f2;
+      color: var(--primary);
+    }
+
+    .icon-teal {
+      background: #ecfeff;
+      color: #0891b2;
+    }
+
+    .icon-yellow {
+      background: #fffbeb;
+      color: #d97706;
+    }
+
+    .icon-green {
+      background: #ecfdf5;
+      color: #059669;
+    }
+
+    /* =========================================================
+       CARDS / CHARTS
+    ========================================================== */
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .card-header h3 {
+      font-size: 14px;
+    }
+
+    .card-header span {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .card-body {
+      padding: 18px;
+    }
+
+    .chart-wrap {
+      position: relative;
+      height: 300px;
+    }
+
+    /* =========================================================
+       TABLES
+    ========================================================== */
+
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 820px;
+    }
+
+    th,
+    td {
+      padding: 12px 13px;
+      text-align: left;
+      border-bottom: 1px solid #f0f1f3;
+      vertical-align: middle;
+      font-size: 12px;
+    }
+
+    th {
+      color: #6b7280;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      background: #fafafa;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    td {
+      color: #374151;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .user-cell {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 190px;
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #f3f4f6;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+
+    .avatar-placeholder {
+      display: grid;
+      place-items: center;
+      color: #6b7280;
+      font-size: 13px;
+    }
+
+    .user-name {
+      font-weight: 700;
+      color: #111827;
+      max-width: 160px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .user-meta {
+      color: #9ca3af;
+      font-size: 10px;
+      margin-top: 2px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border-radius: 999px;
+      padding: 5px 8px;
+      font-size: 10px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .badge-premium {
+      color: #92400e;
+      background: #fef3c7;
+    }
+
+    .badge-normal {
+      color: #475569;
+      background: #f1f5f9;
+    }
+
+    .badge-pending {
+      color: #92400e;
+      background: #fef3c7;
+    }
+
+    .badge-reviewed {
+      color: #065f46;
+      background: #d1fae5;
+    }
+
+    .badge-dismissed {
+      color: #475569;
+      background: #e2e8f0;
+    }
+
+    .badge-suspended {
+      color: #9a3412;
+      background: #ffedd5;
+    }
+
+    .badge-blocked {
+      color: #991b1b;
+      background: #fee2e2;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      min-width: 300px;
+    }
+
+    .gender-select {
+      min-width: 100px;
+      padding: 7px 9px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: white;
+      font-size: 11px;
+      outline: none;
+    }
+
+    .gender-select:focus {
+      border-color: var(--primary);
+    }
+
+    .empty-state {
+      padding: 35px 20px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .empty-state i {
+      font-size: 28px;
+      margin-bottom: 10px;
+      opacity: 0.35;
+    }
+
+    .loading-row {
+      padding: 30px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    /* =========================================================
+       TOOLBAR
+    ========================================================== */
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 9px;
+      margin-bottom: 16px;
+    }
+
+    .toolbar .search-box {
+      flex: 1 1 280px;
+      position: relative;
+    }
+
+    .search-box i {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #9ca3af;
+      font-size: 13px;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding-left: 36px;
+    }
+
+    .filter-group {
+      display: flex;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .filter-btn {
+      border: none;
+      background: white;
+      padding: 9px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #6b7280;
+      white-space: nowrap;
+    }
+
+    .filter-btn.active {
+      background: var(--primary);
+      color: white;
+    }
+
+    /* =========================================================
+       MODALS
+    ========================================================== */
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.58);
+      z-index: 3000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-overlay.show {
+      display: flex;
+    }
+
+    .modal {
+      width: 100%;
+      max-width: 650px;
+      max-height: min(90vh, 850px);
+      overflow-y: auto;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 30px 80px rgba(15, 23, 42, 0.25);
+    }
+
+    .modal-header {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      position: sticky;
+      top: 0;
+      background: white;
+      z-index: 2;
+    }
+
+    .modal-header h3 {
+      font-size: 16px;
+    }
+
+    .modal-close {
+      width: 34px;
+      height: 34px;
+      border: none;
+      border-radius: 9px;
+      background: #f3f4f6;
+      color: #6b7280;
+    }
+
+    .modal-body {
+      padding: 18px;
+    }
+
+    .profile-hero {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .profile-big-avatar {
+      width: 82px;
+      height: 82px;
+      border-radius: 20px;
+      object-fit: cover;
+      background: #f3f4f6;
+      flex-shrink: 0;
+    }
+
+    .profile-name {
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .profile-email {
+      color: var(--muted);
+      font-size: 12px;
+      word-break: break-all;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .detail-item {
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      padding: 11px 12px;
+      background: #fafafa;
+    }
+
+    .detail-label {
+      color: #9ca3af;
+      font-size: 10px;
+      text-transform: uppercase;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      margin-bottom: 5px;
+    }
+
+    .detail-value {
+      font-size: 12px;
+      font-weight: 600;
+      word-break: break-word;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 17px;
+    }
+
+    /* =========================================================
+       IMAGE PREVIEW
+    ========================================================== */
+
+    #imagePreviewOverlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 5000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow: hidden;
+    }
+
+    #imagePreviewOverlay.show {
+      display: flex;
+    }
+
+    #previewImage {
+      max-width: 95vw;
+      max-height: 90vh;
+      object-fit: contain;
+      transform-origin: center center;
+      cursor: grab;
+      user-select: none;
+      touch-action: none;
+    }
+
+    #previewImage:active {
+      cursor: grabbing;
+    }
+
+    .image-preview-close {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      z-index: 2;
+      width: 42px;
+      height: 42px;
+      border: none;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      color: white;
+      font-size: 18px;
+    }
+
+    .image-preview-controls {
+      position: absolute;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 7px;
+      z-index: 2;
+    }
+
+    /* =========================================================
+       VERIFICATION PREVIEW
+    ========================================================== */
+
+    .verification-preview {
+      display: grid;
+      grid-template-columns: minmax(260px, 1.45fr) minmax(130px, 0.75fr);
+      gap: 10px;
+      min-width: 390px;
+    }
+
+    .verification-preview-box {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #f8fafc;
+      padding: 8px;
+    }
+
+    .verification-preview-label {
+      color: #6b7280;
+      font-size: 9px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: 7px;
+    }
+
+    .verification-video {
+      width: 100%;
+      height: 190px;
+      display: block;
+      object-fit: contain;
+      background: #0f172a;
+      border-radius: 9px;
+    }
+
+    .verification-photo {
+      width: 100%;
+      height: 190px;
+      display: block;
+      object-fit: cover;
+      background: #e5e7eb;
+      border-radius: 9px;
+      cursor: zoom-in;
+    }
+
+    @media (max-width: 900px) {
+      .verification-preview {
+        grid-template-columns: 1fr;
+        min-width: 260px;
+      }
+
+      .verification-video,
+      .verification-photo {
+        height: 220px;
+      }
+    }
+
+    /* =========================================================
+       TOAST
+    ========================================================== */
+
+    #toastContainer {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 7000;
+      width: min(380px, calc(100vw - 36px));
+    }
+
+    .toast {
+      background: #111827;
+      color: white;
+      border-radius: 12px;
+      padding: 12px 14px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.18);
+      display: flex;
+      gap: 9px;
+      align-items: flex-start;
+      margin-top: 8px;
+      animation: toastIn 0.2s ease;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .toast.success {
+      border-left: 4px solid var(--success);
+    }
+
+    .toast.error {
+      border-left: 4px solid var(--danger);
+    }
+
+    .toast.warning {
+      border-left: 4px solid var(--warning);
+    }
+
+    @keyframes toastIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* =========================================================
+       CONFIG / FORMS
+    ========================================================== */
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 15px;
+    }
+
+    .form-grid .full {
+      grid-column: 1 / -1;
+    }
+
+    .switch-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 14px 15px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    .switch-label strong {
+      display: block;
+      font-size: 13px;
+    }
+
+    .switch-label span {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .switch {
+      position: relative;
+      width: 46px;
+      height: 25px;
+      flex-shrink: 0;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      inset: 0;
+      background: #d1d5db;
+      border-radius: 999px;
+      transition: 0.2s;
+      cursor: pointer;
+    }
+
+    .slider:before {
+      content: "";
+      width: 19px;
+      height: 19px;
+      left: 3px;
+      top: 3px;
+      position: absolute;
+      border-radius: 50%;
+      background: white;
+      transition: 0.2s;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+    }
+
+    .switch input:checked + .slider {
+      background: var(--primary);
+    }
+
+    .switch input:checked + .slider:before {
+      transform: translateX(21px);
+    }
+
+    /* =========================================================
+       REPORT REASONS
+    ========================================================== */
+
+    .report-reasons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .report-reason {
+      background: #f3f4f6;
+      color: #4b5563;
+      border-radius: 999px;
+      padding: 4px 7px;
+      font-size: 9px;
+      font-weight: 700;
+    }
+
+    /* =========================================================
+       MOBILE
+    ========================================================== */
+
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      z-index: 1100;
+    }
+
+    @media (max-width: 1200px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 992px) {
+      :root {
+        --sidebar-width: 260px;
+      }
+
+      .sidebar {
+        transform: translateX(-100%);
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      .sidebar-overlay.show {
+        display: block;
+      }
+
+      .main {
+        width: 100%;
+        margin-left: 0;
+      }
+
+      .mobile-menu-btn {
+        display: grid;
+        place-items: center;
+      }
+
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .topbar {
+        padding: 0 13px;
+      }
+
+      .topbar-right .status-pill {
+        display: none;
+      }
+
+      .content {
+        padding: 14px;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .stat-card {
+        padding: 13px;
+      }
+
+      .stat-value {
+        font-size: 21px;
+      }
+
+      .chart-wrap {
+        height: 240px;
+      }
+
+      .form-grid,
+      .detail-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .modal-overlay {
+        padding: 10px;
+        align-items: flex-end;
+      }
+
+      .modal {
+        max-height: 92vh;
+        border-radius: 18px 18px 0 0;
+      }
+
+      .profile-hero {
+        align-items: flex-start;
+      }
+
+      .actions {
+        min-width: 260px;
+      }
+
+      .btn-sm {
+        min-height: 38px;
+      }
+
+      .toolbar {
+        align-items: stretch;
+      }
+
+      .filter-group {
+        width: 100%;
+      }
+
+      .filter-btn {
+        flex: 1;
+      }
+    }
+
+    @media (max-width: 460px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .page-title {
+        font-size: 15px;
+      }
+
+      .page-subtitle {
+        font-size: 10px;
+      }
+
+      .topbar {
+        height: 62px;
+      }
+
+      .brand {
+        margin-bottom: 12px;
+      }
+    }
+
+    /* =========================================================
+       SAFE AREA
+    ========================================================== */
+
+    @supports (padding: max(0px)) {
+      .topbar {
+        padding-top: max(0px, env(safe-area-inset-top));
+      }
+
+      .sidebar {
+        padding-top: max(18px, env(safe-area-inset-top));
+        padding-bottom: max(18px, env(safe-area-inset-bottom));
+      }
+
+      #toastContainer {
+        bottom: max(18px, env(safe-area-inset-bottom));
+      }
+    }
+  </style>
 </head>
-
 
 <body>
 
-
-  <!-- =======================================================
-       BACKGROUND GLOWS
-  ======================================================== -->
-
-  <div
-    class="page-glow glow-one"
-    aria-hidden="true"
-  ></div>
-
-  <div
-    class="page-glow glow-two"
-    aria-hidden="true"
-  ></div>
-
-
-  <!-- =======================================================
-       HEADER
-  ======================================================== -->
-
-  <header
-    class="site-header"
-    id="top"
-  >
-
-    <div class="container nav-wrap">
-
-
-      <!-- ===================================================
-           BRAND
-      ==================================================== -->
-
-      <a
-        class="brand"
-        href="#top"
-        aria-label="Masoya home"
-      >
-
-        <span class="logo-box">
-
-          <img
-            src="assets/logo.svg"
-            alt="Masoya"
-            class="brand-mark"
-          >
-
-        </span>
-
-        <span class="brand-name">
-          Masoya
-        </span>
-
-      </a>
-
-
-      <!-- ===================================================
-           DESKTOP NAVIGATION
-      ==================================================== -->
-
-      <nav
-        class="desktop-nav"
-        aria-label="Primary navigation"
-      >
-
-        <a href="#features">
-          Features
-        </a>
-
-        <a href="#experience">
-          Experience
-        </a>
-
-        <a href="#safety">
-          Safety
-        </a>
-
-        <a href="#download">
-          Download
-        </a>
-
-      </nav>
-
-
-      <!-- ===================================================
-           DESKTOP GET MASOYA
-      ==================================================== -->
-
-      <a
-        class="nav-cta"
-        href="https://play.google.com/store/apps/details?id=com.nemaj.masoya"
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Get Masoya on Google Play"
-      >
-
-        <span class="play-store-icon small">
-
-          <img
-            src="assets/images/google-play.png"
-            alt=""
-          >
-
-        </span>
-
-        Get Masoya
-
-      </a>
-
-
-      <!-- ===================================================
-           MOBILE MENU TOGGLE
-      ==================================================== -->
-
-      <button
-        class="menu-toggle"
-        type="button"
-        aria-label="Open menu"
-        aria-expanded="false"
-        aria-controls="mobile-menu"
-      >
-
-        <span></span>
-        <span></span>
-        <span></span>
-
-      </button>
-
-    </div>
-
-
-    <!-- =====================================================
-         MOBILE MENU
-    ====================================================== -->
-
-    <div
-      class="mobile-menu"
-      id="mobile-menu"
-    >
-
-      <a href="#features">
-        Features
-      </a>
-
-      <a href="#experience">
-        Experience
-      </a>
-
-      <a href="#safety">
-        Safety
-      </a>
-
-      <a href="#download">
-        Download
-      </a>
-
-
-      <a
-        class="mobile-cta"
-        href="https://play.google.com/store/apps/details?id=com.nemaj.masoya"
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Get Masoya on Google Play"
-      >
-
-        <span class="play-store-icon small">
-
-          <img
-            src="assets/images/google-play.png"
-            alt=""
-          >
-
-        </span>
-
-        Get Masoya
-
-      </a>
-
-    </div>
-
-  </header>
-
-
-  <!-- =======================================================
-       MAIN
-  ======================================================== -->
-
-  <main>
-
-
-    <!-- =====================================================
-         HERO
-    ====================================================== -->
-
-    <section
-      class="hero section"
-      aria-labelledby="hero-title"
-    >
-
-
-      <!-- ===================================================
-           DECORATIVE PEOPLE
-      ==================================================== -->
-
-      <div
-        class="hero-bg-person person-left"
-        aria-hidden="true"
-      >
-
-        <img
-          src="assets/images/couple.jpg"
-          alt=""
-          loading="lazy"
-        >
-
+  <!-- =========================================================
+       LOGIN SCREEN
+  ========================================================== -->
+
+  <section id="loginScreen">
+    <div class="login-card">
+
+      <div class="login-logo">
+        <i class="fa-solid fa-heart"></i>
       </div>
 
+      <h1>Masoya Admin</h1>
 
-      <div
-        class="hero-bg-person person-right"
-        aria-hidden="true"
-      >
+      <p>
+        Sign in with an authorized administrator account
+        to manage Masoya.
+      </p>
 
-        <img
-          src="assets/images/ahmed.jpg"
-          alt=""
-          loading="lazy"
+      <form id="loginForm">
+
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input
+            id="loginEmail"
+            class="input"
+            type="email"
+            autocomplete="email"
+            placeholder="admin@example.com"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input
+            id="loginPassword"
+            class="input"
+            type="password"
+            autocomplete="current-password"
+            placeholder="••••••••"
+            required
+          />
+        </div>
+
+        <button
+          id="loginButton"
+          class="btn btn-primary"
+          type="submit"
+          style="width:100%;"
         >
-
-      </div>
-
-
-      <!-- ===================================================
-           DECORATIVE RINGS
-      ==================================================== -->
-
-      <div
-        class="hero-bg-ring ring-one"
-        aria-hidden="true"
-      ></div>
-
-      <div
-        class="hero-bg-ring ring-two"
-        aria-hidden="true"
-      ></div>
-
-
-      <div class="container hero-grid">
-
-
-        <!-- =================================================
-             HERO COPY
-             Desktop: LEFT
-             Mobile: BELOW VISUAL
-        ================================================== -->
+          <i class="fa-solid fa-right-to-bracket"></i>
+          Sign In
+        </button>
 
         <div
-          class="hero-copy reveal"
+          id="loginError"
+          class="login-error hidden"
+        ></div>
+
+      </form>
+    </div>
+  </section>
+
+
+  <!-- =========================================================
+       APP
+  ========================================================== -->
+
+  <div id="app">
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <div class="app-shell">
+
+      <!-- =====================================================
+           SIDEBAR
+      ====================================================== -->
+
+      <aside class="sidebar" id="sidebar">
+
+        <div class="brand">
+
+          <div class="brand-icon">
+            <i class="fa-solid fa-heart"></i>
+          </div>
+
+          <div class="brand-text">
+            <strong>Masoya</strong>
+            <span>Advanced Admin Panel</span>
+          </div>
+
+        </div>
+
+        <div class="nav-title">Main</div>
+
+        <button
+          class="nav-item active"
+          data-page="dashboard"
         >
+          <i class="fa-solid fa-chart-line"></i>
+          <span>Dashboard</span>
+        </button>
 
-          <div class="eyebrow">
+        <button
+          class="nav-item"
+          data-page="users"
+        >
+          <i class="fa-solid fa-users"></i>
+          <span>All Users</span>
+        </button>
 
-            <span class="eyebrow-dot"></span>
+        <button
+          class="nav-item"
+          data-page="reports"
+        >
+          <i class="fa-solid fa-flag"></i>
+          <span>Reports &amp; Actions</span>
+        </button>
 
-            A modern way to connect
+        <div class="nav-title">Management</div>
+
+        <button
+          class="nav-item"
+          data-page="broadcast"
+        >
+          <i class="fa-solid fa-bullhorn"></i>
+          <span>Broadcast</span>
+        </button>
+
+        <button
+          class="nav-item"
+          data-page="verification"
+        >
+          <i class="fa-solid fa-circle-check"></i>
+          <span>Video Verify</span>
+        </button>
+
+        <button
+          class="nav-item"
+          data-page="config"
+        >
+          <i class="fa-solid fa-sliders"></i>
+          <span>App Config</span>
+        </button>
+
+        <div class="sidebar-footer">
+
+          <div class="admin-mini">
+            <small>Signed in as</small>
+            <strong id="adminEmail">—</strong>
+          </div>
+
+          <button
+            id="logoutButton"
+            class="btn btn-secondary"
+            style="width:100%;"
+          >
+            <i class="fa-solid fa-right-from-bracket"></i>
+            Logout
+          </button>
+
+        </div>
+
+      </aside>
+
+
+      <!-- =====================================================
+           MAIN
+      ====================================================== -->
+
+      <main class="main">
+
+        <!-- TOPBAR -->
+
+        <header class="topbar">
+
+          <div class="topbar-left">
+
+            <button
+              id="mobileMenuButton"
+              class="mobile-menu-btn"
+              aria-label="Open menu"
+            >
+              <i class="fa-solid fa-bars"></i>
+            </button>
+
+            <div>
+              <div class="page-title" id="pageTitle">
+                Dashboard
+              </div>
+
+              <div
+                class="page-subtitle"
+                id="pageSubtitle"
+              >
+                Masoya management overview
+              </div>
+            </div>
 
           </div>
 
+          <div class="topbar-right">
 
-          <h1 id="hero-title">
+            <div class="status-pill">
+              <span class="status-dot"></span>
+              Admin Online
+            </div>
 
-            Meet people who feel
+          </div>
 
-            <span class="gradient-text">
-              right for you.
-            </span>
-
-          </h1>
-
-
-          <p class="hero-text">
-
-            Discover people, send a like, make a match,
-            and start a real conversation — all in one
-            simple and beautiful experience.
-
-          </p>
+        </header>
 
 
-          <div class="hero-actions">
+        <!-- CONTENT -->
 
-            <a
-              class="btn btn-primary"
-              href="https://play.google.com/store/apps/details?id=com.nemaj.masoya"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Download Masoya from Google Play"
-            >
+        <section class="content">
 
-              <span class="play-store-icon">
 
-                <img
-                  src="assets/images/google-play.png"
-                  alt=""
+          <!-- ===================================================
+               DASHBOARD
+          ==================================================== -->
+
+          <div
+            class="page active"
+            id="page-dashboard"
+          >
+
+            <div class="section-head">
+              <h2>Dashboard</h2>
+              <p>
+                Overview of Masoya users, activity,
+                matches and reports.
+              </p>
+            </div>
+
+            <div class="stats-grid">
+
+              <div class="stat-card">
+                <div class="stat-top">
+
+                  <div class="stat-label">
+                    Total Users
+                  </div>
+
+                  <div class="stat-icon icon-red">
+                    <i class="fa-solid fa-users"></i>
+                  </div>
+
+                </div>
+
+                <div
+                  class="stat-value"
+                  id="statTotalUsers"
                 >
+                  —
+                </div>
 
-              </span>
-
-              Download on Google Play
-
-            </a>
-
-
-            <a
-              class="text-link"
-              href="#features"
-            >
-
-              Explore Masoya
-
-              <span>
-                →
-              </span>
-
-            </a>
-
-          </div>
+                <div class="stat-note">
+                  All registered users
+                </div>
+              </div>
 
 
-          <div class="trust-row">
+              <div class="stat-card">
 
-            <div class="trust-pill">
+                <div class="stat-top">
 
-              <span class="check">
-                ✓
-              </span>
+                  <div class="stat-label">
+                    Active Today
+                  </div>
 
-              Profile-focused discovery
+                  <div class="stat-icon icon-teal">
+                    <i class="fa-solid fa-bolt"></i>
+                  </div>
+
+                </div>
+
+                <div
+                  class="stat-value"
+                  id="statActiveToday"
+                >
+                  —
+                </div>
+
+                <div class="stat-note">
+                  Recently active
+                </div>
+
+              </div>
+
+
+              <div class="stat-card">
+
+                <div class="stat-top">
+
+                  <div class="stat-label">
+                    Matches
+                  </div>
+
+                  <div class="stat-icon icon-yellow">
+                    <i class="fa-solid fa-heart"></i>
+                  </div>
+
+                </div>
+
+                <div
+                  class="stat-value"
+                  id="statMatches"
+                >
+                  —
+                </div>
+
+                <div class="stat-note">
+                  Total matches
+                </div>
+
+              </div>
+
+
+              <div class="stat-card">
+
+                <div class="stat-top">
+
+                  <div class="stat-label">
+                    Pending Reports
+                  </div>
+
+                  <div class="stat-icon icon-green">
+                    <i class="fa-solid fa-flag"></i>
+                  </div>
+
+                </div>
+
+                <div
+                  class="stat-value"
+                  id="statPendingReports"
+                >
+                  —
+                </div>
+
+                <div class="stat-note">
+                  Require attention
+                </div>
+
+              </div>
 
             </div>
 
 
-            <div class="trust-pill">
+            <div class="grid-2">
 
-              <span class="check">
-                ✓
-              </span>
+              <div class="card">
 
-              Private conversations
+                <div class="card-header">
+                  <div>
+                    <h3>User Growth</h3>
+                    <span>Last 30 days</span>
+                  </div>
+                </div>
 
+                <div class="card-body">
+                  <div class="chart-wrap">
+                    <canvas id="userGrowthChart"></canvas>
+                  </div>
+                </div>
+
+              </div>
+
+
+              <div class="card">
+
+                <div class="card-header">
+                  <div>
+                    <h3>Matches Trend</h3>
+                    <span>Last 30 days</span>
+                  </div>
+                </div>
+
+                <div class="card-body">
+                  <div class="chart-wrap">
+                    <canvas id="matchesChart"></canvas>
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+
+
+            <!-- RECENT ACTIVE -->
+
+            <div class="card">
+
+              <div class="card-header">
+
+                <div>
+                  <h3>Recent Active Users</h3>
+                  <span>
+                    Most recently active users
+                  </span>
+                </div>
+
+                <button
+                  class="btn btn-outline btn-sm"
+                  onclick="showPage('users')"
+                >
+                  View All
+                </button>
+
+              </div>
+
+              <div class="table-wrap">
+
+                <table>
+
+                  <thead>
+                    <tr>
+                      <th>User</th>
+                      <th>Gender</th>
+                      <th>Account</th>
+                      <th>Location</th>
+                      <th>Last Active</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+
+                  <tbody id="recentUsersTable">
+                    <tr>
+                      <td
+                        colspan="6"
+                        class="loading-row"
+                      >
+                        Loading...
+                      </td>
+                    </tr>
+                  </tbody>
+
+                </table>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <!-- ===================================================
+               ALL USERS
+          ==================================================== -->
+
+          <div
+            class="page"
+            id="page-users"
+          >
+
+            <div class="section-head">
+
+              <h2>All Users</h2>
+
+              <p>
+                Manage all normal and premium Masoya users.
+              </p>
+
+            </div>
+
+
+            <div class="toolbar">
+
+              <div class="search-box">
+                <i class="fa-solid fa-search"></i>
+
+                <input
+                  id="userSearch"
+                  class="input"
+                  type="search"
+                  placeholder="Search name, email, UID, gender or location..."
+                />
+              </div>
+
+
+              <div class="filter-group">
+
+                <button
+                  class="filter-btn active"
+                  data-user-filter="all"
+                >
+                  All
+                </button>
+
+                <button
+                  class="filter-btn"
+                  data-user-filter="normal"
+                >
+                  Normal
+                </button>
+
+                <button
+                  class="filter-btn"
+                  data-user-filter="premium"
+                >
+                  Premium
+                </button>
+
+              </div>
+
+
+              <button
+                id="refreshUsersButton"
+                class="btn btn-outline"
+              >
+                <i class="fa-solid fa-rotate"></i>
+                Refresh
+              </button>
+
+            </div>
+
+
+            <div class="card">
+
+              <div class="card-header">
+
+                <div>
+                  <h3>Users</h3>
+
+                  <span id="userCountLabel">
+                    0 users
+                  </span>
+                </div>
+
+              </div>
+
+
+              <div class="table-wrap">
+
+                <table>
+
+                  <thead>
+
+                    <tr>
+                      <th>User</th>
+                      <th>Gender</th>
+                      <th>Account</th>
+                      <th>Location</th>
+                      <th>Verified</th>
+                      <th>Last Active</th>
+                      <th>Actions</th>
+                    </tr>
+
+                  </thead>
+
+                  <tbody id="allUsersTable">
+
+                    <tr>
+                      <td
+                        colspan="7"
+                        class="loading-row"
+                      >
+                        Loading users...
+                      </td>
+                    </tr>
+
+                  </tbody>
+
+                </table>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <!-- ===================================================
+               REPORTS
+          ==================================================== -->
+
+          <div
+            class="page"
+            id="page-reports"
+          >
+
+            <div class="section-head">
+
+              <h2>Reports &amp; Actions</h2>
+
+              <p>
+                Review reported users and perform moderation
+                actions.
+              </p>
+
+            </div>
+
+
+            <div class="toolbar">
+
+              <div class="search-box">
+
+                <i class="fa-solid fa-search"></i>
+
+                <input
+                  id="reportSearch"
+                  class="input"
+                  type="search"
+                  placeholder="Search reported user or report reason..."
+                />
+
+              </div>
+
+
+              <button
+                id="refreshReportsButton"
+                class="btn btn-outline"
+              >
+                <i class="fa-solid fa-rotate"></i>
+                Refresh
+              </button>
+
+            </div>
+
+
+            <div class="card">
+
+              <div class="card-header">
+
+                <div>
+                  <h3>Reported Users</h3>
+
+                  <span id="reportCountLabel">
+                    0 reports
+                  </span>
+                </div>
+
+              </div>
+
+
+              <div class="table-wrap">
+
+                <table>
+
+                  <thead>
+
+                    <tr>
+                      <th>Reported User</th>
+                      <th>Gender</th>
+                      <th>Reports</th>
+                      <th>Reasons</th>
+                      <th>Status</th>
+                      <th>Latest Report</th>
+                      <th>Actions</th>
+                    </tr>
+
+                  </thead>
+
+                  <tbody id="reportsTable">
+
+                    <tr>
+                      <td
+                        colspan="7"
+                        class="loading-row"
+                      >
+                        Loading reports...
+                      </td>
+                    </tr>
+
+                  </tbody>
+
+                </table>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <!-- ===================================================
+               BROADCAST
+          ==================================================== -->
+
+          <div
+            class="page"
+            id="page-broadcast"
+          >
+
+            <div class="section-head">
+
+              <h2>Broadcast</h2>
+
+              <p>
+                Prepare an announcement for Masoya users.
+              </p>
+
+            </div>
+
+
+            <div class="card">
+
+              <div class="card-header">
+                <div>
+                  <h3>Create Announcement</h3>
+                  <span>
+                    Announcement is saved in the admin cache.
+                  </span>
+                </div>
+              </div>
+
+              <div class="card-body">
+
+                <div class="form-grid">
+
+                  <div class="form-group">
+                    <label class="form-label">
+                      Title
+                    </label>
+
+                    <input
+                      id="broadcastTitle"
+                      class="input"
+                      placeholder="Masoya Update"
+                    />
+                  </div>
+
+
+                  <div class="form-group">
+                    <label class="form-label">
+                      Audience
+                    </label>
+
+                    <select
+                      id="broadcastAudience"
+                      class="select"
+                    >
+                      <option value="all">
+                        All Users
+                      </option>
+
+                      <option value="premium">
+                        Premium Users
+                      </option>
+
+                      <option value="normal">
+                        Normal Users
+                      </option>
+                    </select>
+                  </div>
+
+
+                  <div class="form-group full">
+
+                    <label class="form-label">
+                      Message
+                    </label>
+
+                    <textarea
+                      id="broadcastMessage"
+                      class="textarea"
+                      placeholder="Write announcement..."
+                    ></textarea>
+
+                  </div>
+
+                </div>
+
+
+                <button
+                  id="saveBroadcastButton"
+                  class="btn btn-primary"
+                >
+                  <i class="fa-solid fa-paper-plane"></i>
+                  Save Announcement
+                </button>
+
+              </div>
+
+            </div>
+
+
+            <div
+              class="card"
+              style="margin-top:18px;"
+            >
+
+              <div class="card-header">
+
+                <div>
+                  <h3>Previous Announcements</h3>
+                  <span>Local admin history</span>
+                </div>
+
+              </div>
+
+              <div
+                class="card-body"
+                id="announcementsList"
+              >
+                <div class="empty-state">
+                  <i class="fa-solid fa-bullhorn"></i>
+                  <div>No announcements yet.</div>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <!-- ===================================================
+               VERIFICATION
+          ==================================================== -->
+
+          <div
+            class="page"
+            id="page-verification"
+          >
+
+            <div class="section-head">
+
+              <h2>Video Verification</h2>
+
+              <p>
+                Review pending identity verification requests.
+              </p>
+
+            </div>
+
+
+            <div class="card">
+
+              <div class="card-header">
+
+                <div>
+                  <h3>Verification Requests</h3>
+
+                  <span id="verificationCount">
+                    0 pending
+                  </span>
+                </div>
+
+                <button
+                  id="refreshVerificationButton"
+                  class="btn btn-outline btn-sm"
+                >
+                  <i class="fa-solid fa-rotate"></i>
+                  Refresh
+                </button>
+
+              </div>
+
+
+              <div class="table-wrap">
+
+                <table>
+
+                  <thead>
+
+                    <tr>
+                      <th>User</th>
+                      <th>Verification Preview</th>
+                      <th>Status</th>
+                      <th>Submitted</th>
+                      <th>Actions</th>
+                    </tr>
+
+                  </thead>
+
+                  <tbody id="verificationTable">
+
+                    <tr>
+                      <td
+                        colspan="5"
+                        class="loading-row"
+                      >
+                        Loading verification requests...
+                      </td>
+                    </tr>
+
+                  </tbody>
+
+                </table>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <!-- ===================================================
+               CONFIG
+          ==================================================== -->
+
+          <div
+            class="page"
+            id="page-config"
+          >
+
+            <div class="section-head">
+
+              <h2>App Config</h2>
+
+              <p>
+                Control application-wide update settings.
+              </p>
+
+            </div>
+
+
+            <div class="card">
+
+              <div class="card-header">
+
+                <div>
+                  <h3>Update Configuration</h3>
+
+                  <span>
+                    Stored in Firestore app_config/update
+                  </span>
+                </div>
+
+              </div>
+
+
+              <div class="card-body">
+
+                <div class="form-grid">
+
+                  <div class="form-group">
+
+                    <label class="form-label">
+                      Minimum Version Code
+                    </label>
+
+                    <input
+                      id="minimumVersionCode"
+                      class="input"
+                      type="number"
+                      min="1"
+                      placeholder="e.g. 4"
+                    />
+
+                    <div
+                      style="
+                        margin-top:6px;
+                        color:#6b7280;
+                        font-size:11px;
+                        line-height:1.5;
+                      "
+                    >
+                      Users below this build number must update
+                      before they can continue.
+                    </div>
+
+                  </div>
+
+
+                  <div class="form-group">
+
+                    <label class="form-label">
+                      Latest Version Code
+                    </label>
+
+                    <input
+                      id="latestVersionCode"
+                      class="input"
+                      type="number"
+                      min="1"
+                      placeholder="e.g. 6"
+                    />
+
+                    <div
+                      style="
+                        margin-top:6px;
+                        color:#6b7280;
+                        font-size:11px;
+                        line-height:1.5;
+                      "
+                    >
+                      Users below this build number are notified
+                      but can continue using the app.
+                    </div>
+
+                  </div>
+
+
+                  <div class="form-group full">
+
+                    <div
+                      class="switch-row"
+                      style="background:#f8fafc;"
+                    >
+
+                      <div class="switch-label">
+
+                        <strong>
+                          Update Policy
+                        </strong>
+
+                        <span>
+                          Automatic: below Minimum = forced update.
+                          Minimum to below Latest = optional update notice.
+                          Latest or newer = no update prompt.
+                        </span>
+
+                      </div>
+
+                      <div
+                        style="
+                          font-size:12px;
+                          font-weight:800;
+                          color:#16a34a;
+                          white-space:nowrap;
+                        "
+                      >
+                        Automatic
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+
+                <button
+                  id="saveConfigButton"
+                  class="btn btn-primary"
+                >
+                  <i class="fa-solid fa-floppy-disk"></i>
+                  Save Configuration
+                </button>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </section>
+
+      </main>
+
+    </div>
+
+  </div>
+
+
+  <!-- =========================================================
+       USER MODAL
+  ========================================================== -->
+
+  <div
+    id="userModalOverlay"
+    class="modal-overlay"
+  >
+
+    <div class="modal">
+
+      <div class="modal-header">
+
+        <h3>User Profile</h3>
+
+        <button
+          class="modal-close"
+          onclick="closeUserModal()"
+        >
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+
+      </div>
+
+      <div
+        class="modal-body"
+        id="userModalBody"
+      >
+        Loading...
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- =========================================================
+       CONFIRM MODAL
+  ========================================================== -->
+
+  <div
+    id="confirmModalOverlay"
+    class="modal-overlay"
+  >
+
+    <div class="modal" style="max-width:440px;">
+
+      <div class="modal-header">
+
+        <h3 id="confirmTitle">
+          Confirm Action
+        </h3>
+
+        <button
+          class="modal-close"
+          onclick="closeConfirmModal()"
+        >
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+
+      </div>
+
+      <div class="modal-body">
+
+        <p
+          id="confirmMessage"
+          style="
+            color:#4b5563;
+            font-size:13px;
+            line-height:1.6;
+          "
+        >
+          Are you sure?
+        </p>
+
+        <div
+          class="modal-actions"
+          style="justify-content:flex-end;"
+        >
+
+          <button
+            class="btn btn-secondary"
+            onclick="closeConfirmModal()"
+          >
+            Cancel
+          </button>
+
+          <button
+            id="confirmActionButton"
+            class="btn btn-danger"
+          >
+            Confirm
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- =========================================================
+       IMAGE PREVIEW
+  ========================================================== -->
+
+  <div id="imagePreviewOverlay">
+
+    <button
+      class="image-preview-close"
+      onclick="closeImagePreview()"
+    >
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+
+    <img
+      id="previewImage"
+      src=""
+      alt="Preview"
+    />
+
+    <div class="image-preview-controls">
+
+      <button
+        class="btn btn-secondary btn-sm"
+        onclick="zoomImage(-0.2)"
+      >
+        <i class="fa-solid fa-minus"></i>
+      </button>
+
+      <button
+        class="btn btn-secondary btn-sm"
+        onclick="resetImageZoom()"
+      >
+        Reset
+      </button>
+
+      <button
+        class="btn btn-secondary btn-sm"
+        onclick="zoomImage(0.2)"
+      >
+        <i class="fa-solid fa-plus"></i>
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <!-- =========================================================
+       TOAST
+  ========================================================== -->
+
+  <div id="toastContainer"></div>
+
+
+  <!-- =========================================================
+       FIREBASE
+  ========================================================== -->
+
+  <script type="module">
+
+    import {
+      initializeApp
+    } from
+      "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+
+    import {
+      getAuth,
+      signInWithEmailAndPassword,
+      onAuthStateChanged,
+      signOut
+    } from
+      "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+
+    import {
+      getFirestore,
+      collection,
+      doc,
+      getDoc,
+      getDocs,
+      updateDoc,
+      deleteDoc,
+      setDoc,
+      query,
+      orderBy,
+      limit,
+      where,
+      Timestamp
+    } from
+      "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+
+    /* ==========================================================
+       FIREBASE CONFIG
+    =========================================================== */
+
+    const firebaseConfig = {
+      apiKey:
+        "AIzaSyBjSl38woOcwv5Fl-gSyXzvw8IkHGJ6kpg",
+
+      authDomain:
+        "masoya-decba.firebaseapp.com",
+
+      databaseURL:
+        "https://masoya-decba-default-rtdb.firebaseio.com",
+
+      projectId:
+        "masoya-decba",
+
+      storageBucket:
+        "masoya-decba.firebasestorage.app",
+
+      messagingSenderId:
+        "996973108270",
+
+      appId:
+        "1:996973108270:web:2bf312085ab0b89d7513bf",
+
+      measurementId:
+        "G-FNT2Q542XZ"
+    };
+
+
+    const app = initializeApp(firebaseConfig);
+
+    const auth = getAuth(app);
+
+    const db = getFirestore(app);
+
+
+    /* ==========================================================
+       ADMIN UID
+    =========================================================== */
+
+    const ADMIN_UID =
+      "ZHguZ73SP1ThRJB1P6SMgWYVw193";
+
+
+    /* ==========================================================
+       STATE
+    =========================================================== */
+
+    let currentUser = null;
+
+    let allUsers = [];
+
+    let filteredUsers = [];
+
+    let reports = [];
+
+    let groupedReports = [];
+
+    let verificationRequests = [];
+
+    let currentUserFilter = "all";
+
+    let currentUserSearch = "";
+
+    let currentReportSearch = "";
+
+    let currentModalUid = null;
+
+    let confirmCallback = null;
+
+    let userGrowthChart = null;
+
+    let matchesChart = null;
+
+    let imageScale = 1;
+
+    let imageOffsetX = 0;
+
+    let imageOffsetY = 0;
+
+
+    /* ==========================================================
+       ELEMENT HELPERS
+    =========================================================== */
+
+    const $ = (id) =>
+      document.getElementById(id);
+
+
+    /* ==========================================================
+       TOAST
+    =========================================================== */
+
+    function showToast(
+      message,
+      type = "success"
+    ) {
+
+      const container =
+        $("toastContainer");
+
+      const toast =
+        document.createElement("div");
+
+      toast.className =
+        `toast ${type}`;
+
+      const icon =
+        type === "success"
+          ? "fa-circle-check"
+          : type === "error"
+          ? "fa-circle-exclamation"
+          : "fa-triangle-exclamation";
+
+      toast.innerHTML = `
+        <i class="fa-solid ${icon}"></i>
+        <div>${escapeHtml(message)}</div>
+      `;
+
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.remove();
+      }, 3500);
+    }
+
+
+    /* ==========================================================
+       HTML ESCAPE
+    =========================================================== */
+
+    function escapeHtml(value) {
+
+      if (
+        value === null ||
+        value === undefined
+      ) {
+        return "";
+      }
+
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+
+    /* ==========================================================
+       DATE HELPERS
+    =========================================================== */
+
+    function toDate(value) {
+
+      if (!value) {
+        return null;
+      }
+
+      if (
+        typeof value?.toDate === "function"
+      ) {
+        return value.toDate();
+      }
+
+      if (
+        value instanceof Date
+      ) {
+        return value;
+      }
+
+      if (
+        typeof value === "number"
+      ) {
+        return new Date(value);
+      }
+
+      if (
+        typeof value === "string"
+      ) {
+        const d =
+          new Date(value);
+
+        if (!Number.isNaN(d.getTime())) {
+          return d;
+        }
+      }
+
+      return null;
+    }
+
+
+    function formatDate(value) {
+
+      const date =
+        toDate(value);
+
+      if (!date) {
+        return "—";
+      }
+
+      return date.toLocaleString(
+        undefined,
+        {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit"
+        }
+      );
+    }
+
+
+    function isToday(value) {
+
+      const date =
+        toDate(value);
+
+      if (!date) {
+        return false;
+      }
+
+      const now =
+        new Date();
+
+      return (
+        date.getFullYear() ===
+          now.getFullYear() &&
+        date.getMonth() ===
+          now.getMonth() &&
+        date.getDate() ===
+          now.getDate()
+      );
+    }
+
+
+    /* ==========================================================
+       USER FIELD HELPERS
+    =========================================================== */
+
+    function getUserName(user) {
+
+      return (
+        user.name ||
+        user.displayName ||
+        user.fullName ||
+        user.username ||
+        "Unknown User"
+      );
+    }
+
+
+    function getUserEmail(user) {
+
+      return (
+        user.email ||
+        "No email"
+      );
+    }
+
+
+    function getUserPhoto(user) {
+
+      return (
+        user.photoUrl ||
+        user.photoURL ||
+        user.image ||
+        user.profileImage ||
+        user.profileImageUrl ||
+        ""
+      );
+    }
+
+
+    function getUserGender(user) {
+
+      return (
+        user.gender ||
+        ""
+      );
+    }
+
+
+    function isPremiumUser(user) {
+
+      return (
+        user.isPremium === true ||
+        user.premium === true ||
+        user.subscriptionStatus ===
+          "active" ||
+        user.plan === "premium"
+      );
+    }
+
+
+    function isVerifiedUser(user) {
+
+      return (
+        user.isVerified === true ||
+        user.verified === true
+      );
+    }
+
+
+    function getUserLocation(user) {
+
+      return (
+        user.location ||
+        user.city ||
+        user.state ||
+        user.country ||
+        "—"
+      );
+    }
+
+
+    function getLastActive(user) {
+
+      return (
+        user.lastActive ||
+        user.lastActiveAt ||
+        user.lastSeen ||
+        user.updatedAt ||
+        user.createdAt ||
+        null
+      );
+    }
+
+
+    /* ==========================================================
+       AVATAR
+    =========================================================== */
+
+    function avatarHtml(
+      user,
+      sizeClass = ""
+    ) {
+
+      const photo =
+        getUserPhoto(user);
+
+      if (photo) {
+
+        return `
+          <img
+            class="avatar ${sizeClass}"
+            src="${escapeHtml(photo)}"
+            alt=""
+            onerror="this.style.display='none';this.nextElementSibling.style.display='grid';"
+          />
+
+          <div
+            class="avatar avatar-placeholder"
+            style="display:none;"
+          >
+            <i class="fa-solid fa-user"></i>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="avatar avatar-placeholder">
+          <i class="fa-solid fa-user"></i>
+        </div>
+      `;
+    }
+
+
+    /* ==========================================================
+       GENDER SELECT
+    =========================================================== */
+
+    function genderSelectHtml(
+      uid,
+      gender
+    ) {
+
+      const safeUid =
+        encodeURIComponent(uid);
+
+      const safeGender =
+        escapeHtml(gender || "");
+
+      return `
+        <select
+          class="gender-select"
+          data-gender-uid="${safeUid}"
+          onchange="updateUserGender(
+            decodeURIComponent('${safeUid}'),
+            this.value
+          )"
+        >
+
+          <option value=""
+            ${!safeGender ? "selected" : ""}
+          >
+            —
+          </option>
+
+          <option
+            value="female"
+            ${safeGender === "female" ? "selected" : ""}
+          >
+            Female
+          </option>
+
+          <option
+            value="male"
+            ${safeGender === "male" ? "selected" : ""}
+          >
+            Male
+          </option>
+
+        </select>
+      `;
+    }
+
+
+    /* ==========================================================
+       PREMIUM BADGE
+    =========================================================== */
+
+    function accountBadge(user) {
+
+      if (isPremiumUser(user)) {
+
+        return `
+          <span class="badge badge-premium">
+            <i class="fa-solid fa-crown"></i>
+            Premium
+          </span>
+        `;
+      }
+
+      return `
+        <span class="badge badge-normal">
+          Normal
+        </span>
+      `;
+    }
+
+
+    /* ==========================================================
+       VERIFIED BADGE
+    =========================================================== */
+
+    function verifiedBadge(user) {
+
+      if (isVerifiedUser(user)) {
+
+        return `
+          <span
+            class="badge badge-reviewed"
+          >
+            <i class="fa-solid fa-circle-check"></i>
+            Verified
+          </span>
+        `;
+      }
+
+      return `
+        <span
+          class="badge badge-normal"
+        >
+          Not Verified
+        </span>
+      `;
+    }
+
+
+    /* ==========================================================
+       USER CELL
+    =========================================================== */
+
+    function userCellHtml(user) {
+
+      const name =
+        getUserName(user);
+
+      const uid =
+        user.uid ||
+        user.id ||
+        "";
+
+      return `
+        <div class="user-cell">
+
+          ${avatarHtml(user)}
+
+          <div>
+
+            <div class="user-name">
+              ${escapeHtml(name)}
+            </div>
+
+            <div class="user-meta">
+              ${escapeHtml(
+                getUserEmail(user)
+              )}
             </div>
 
           </div>
 
         </div>
+      `;
+    }
 
 
-        <!-- =================================================
-             HERO VISUAL
-             Desktop: RIGHT
-             Mobile: FIRST
-        ================================================== -->
+    /* ==========================================================
+       NAVIGATION
+    =========================================================== */
 
-        <div
-          class="hero-visual reveal reveal-delay"
-        >
+    const pageMeta = {
+
+      dashboard: {
+        title: "Dashboard",
+        subtitle:
+          "Masoya management overview"
+      },
+
+      users: {
+        title: "All Users",
+        subtitle:
+          "Manage normal and premium users"
+      },
+
+      reports: {
+        title:
+          "Reports & Actions",
+        subtitle:
+          "Review reports and moderate users"
+      },
+
+      broadcast: {
+        title:
+          "Broadcast",
+        subtitle:
+          "Manage announcements"
+      },
+
+      verification: {
+        title:
+          "Video Verify",
+        subtitle:
+          "Review verification requests"
+      },
+
+      config: {
+        title:
+          "App Config",
+        subtitle:
+          "Manage application configuration"
+      }
+
+    };
 
 
-          <!-- =================================================
-               IMAGE + FLOATING CARDS
-          ================================================== -->
+    window.showPage =
+      async function(page) {
 
-          <div class="hero-media-stage">
+        document
+          .querySelectorAll(".page")
+          .forEach((element) => {
+            element.classList.remove("active");
+          });
+
+        const pageElement =
+          $(`page-${page}`);
+
+        if (pageElement) {
+          pageElement.classList.add("active");
+        }
+
+        document
+          .querySelectorAll(".nav-item")
+          .forEach((item) => {
+
+            item.classList.toggle(
+              "active",
+              item.dataset.page === page
+            );
+
+          });
+
+        const meta =
+          pageMeta[page];
+
+        if (meta) {
+
+          $("pageTitle")
+            .textContent =
+            meta.title;
+
+          $("pageSubtitle")
+            .textContent =
+            meta.subtitle;
+        }
+
+        closeSidebarMobile();
+
+        if (page === "users") {
+          await loadUsers();
+        }
+
+        if (page === "reports") {
+          await loadReports();
+        }
+
+        if (page === "verification") {
+          await loadVerificationRequests();
+        }
+
+        if (page === "config") {
+          await loadAppConfig();
+        }
+
+        if (page === "dashboard") {
+          await refreshDashboard();
+        }
+
+      };
 
 
-            <!-- =============================================
-                 BACK IMAGE 1
-            ============================================== -->
+    document
+      .querySelectorAll(".nav-item")
+      .forEach((item) => {
 
-            <div class="hero-image-back back-one">
+        item.addEventListener(
+          "click",
+          () => {
+            showPage(
+              item.dataset.page
+            );
+          }
+        );
 
-              <img
-                src="assets/images/amina.jpg"
-                alt=""
-                loading="lazy"
-              >
+      });
+
+
+    /* ==========================================================
+       MOBILE SIDEBAR
+    =========================================================== */
+
+    function closeSidebarMobile() {
+
+      $("sidebar")
+        .classList
+        .remove("open");
+
+      $("sidebarOverlay")
+        .classList
+        .remove("show");
+    }
+
+
+    $("mobileMenuButton")
+      .addEventListener(
+        "click",
+        () => {
+
+          $("sidebar")
+            .classList
+            .add("open");
+
+          $("sidebarOverlay")
+            .classList
+            .add("show");
+
+        }
+      );
+
+
+    $("sidebarOverlay")
+      .addEventListener(
+        "click",
+        closeSidebarMobile
+      );
+
+
+    /* ==========================================================
+       AUTH
+    =========================================================== */
+
+    $("loginForm")
+      .addEventListener(
+        "submit",
+        async (event) => {
+
+          event.preventDefault();
+
+          const email =
+            $("loginEmail")
+              .value
+              .trim();
+
+          const password =
+            $("loginPassword")
+              .value;
+
+          $("loginButton")
+            .disabled = true;
+
+          $("loginButton")
+            .innerHTML = `
+              <i class="fa-solid fa-spinner fa-spin"></i>
+              Signing in...
+            `;
+
+          $("loginError")
+            .classList
+            .add("hidden");
+
+          try {
+
+            await signInWithEmailAndPassword(
+              auth,
+              email,
+              password
+            );
+
+          } catch (error) {
+
+            console.error(error);
+
+            $("loginError")
+              .textContent =
+              error.message ||
+              "Unable to sign in.";
+
+            $("loginError")
+              .classList
+              .remove("hidden");
+
+          } finally {
+
+            $("loginButton")
+              .disabled = false;
+
+            $("loginButton")
+              .innerHTML = `
+              <i class="fa-solid fa-right-to-bracket"></i>
+              Sign In
+            `;
+          }
+
+        }
+      );
+
+
+    onAuthStateChanged(
+      auth,
+      async (user) => {
+
+        if (!user) {
+
+          currentUser = null;
+
+          $("app").style.display =
+            "none";
+
+          $("loginScreen").style.display =
+            "flex";
+
+          return;
+        }
+
+
+        if (
+          user.uid !== ADMIN_UID
+        ) {
+
+          showToast(
+            "This account is not authorized as an admin.",
+            "error"
+          );
+
+          await signOut(auth);
+
+          return;
+        }
+
+
+        currentUser = user;
+
+        $("adminEmail")
+          .textContent =
+          user.email || user.uid;
+
+
+        $("loginScreen")
+          .style.display =
+          "none";
+
+        $("app")
+          .style.display =
+          "block";
+
+
+        await initializeAdmin();
+
+      }
+    );
+
+
+    /* ==========================================================
+       INITIALIZE ADMIN
+    =========================================================== */
+
+    async function initializeAdmin() {
+
+      await loadUsers();
+
+      await loadReports();
+
+      await loadVerificationRequests();
+
+      await loadAppConfig();
+
+      await loadAnnouncements();
+
+      await refreshDashboard();
+
+      renderCharts();
+
+    }
+
+
+    /* ==========================================================
+       USERS
+    =========================================================== */
+
+    async function loadUsers() {
+
+      $("allUsersTable").innerHTML = `
+        <tr>
+          <td colspan="7" class="loading-row">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            Loading users...
+          </td>
+        </tr>
+      `;
+
+      try {
+
+        const snapshot =
+          await getDocs(
+            collection(db, "users")
+          );
+
+        allUsers = [];
+
+        snapshot.forEach(
+          (documentSnapshot) => {
+
+            const data =
+              documentSnapshot.data();
+
+            allUsers.push({
+              ...data,
+              uid:
+                data.uid ||
+                documentSnapshot.id
+            });
+
+          }
+        );
+
+
+        saveUsersCache();
+
+        applyUserFilters();
+
+        renderRecentUsers();
+
+        updateUserStats();
+
+      } catch (error) {
+
+        console.error(
+          "loadUsers:",
+          error
+        );
+
+        $("allUsersTable").innerHTML = `
+          <tr>
+            <td colspan="7">
+              <div class="empty-state">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <div>
+                  Failed to load users.
+                </div>
+                <small>
+                  ${escapeHtml(error.message)}
+                </small>
+              </div>
+            </td>
+          </tr>
+        `;
+
+        showToast(
+          "Failed to load users.",
+          "error"
+        );
+
+      }
+
+    }
+
+
+    function saveUsersCache() {
+
+      try {
+
+        localStorage.setItem(
+          "masoya_admin_users_cache",
+          JSON.stringify(
+            allUsers.slice(0, 1000)
+          )
+        );
+
+      } catch (_) {}
+
+    }
+
+
+    function applyUserFilters() {
+
+      let result =
+        [...allUsers];
+
+
+      /* SEARCH */
+
+      if (
+        currentUserSearch
+      ) {
+
+        const search =
+          currentUserSearch
+            .toLowerCase();
+
+        result =
+          result.filter(
+            (user) => {
+
+              const values = [
+
+                getUserName(user),
+
+                getUserEmail(user),
+
+                user.uid,
+
+                user.gender,
+
+                getUserLocation(user),
+
+                user.city,
+
+                user.state,
+
+                user.country
+
+              ];
+
+              return values.some(
+                (value) =>
+                  String(
+                    value || ""
+                  )
+                    .toLowerCase()
+                    .includes(search)
+              );
+
+            }
+          );
+
+      }
+
+
+      /* FILTER */
+
+      if (
+        currentUserFilter ===
+        "premium"
+      ) {
+
+        result =
+          result.filter(
+            isPremiumUser
+          );
+
+      } else if (
+        currentUserFilter ===
+        "normal"
+      ) {
+
+        result =
+          result.filter(
+            (user) =>
+              !isPremiumUser(user)
+          );
+
+      }
+
+
+      filteredUsers =
+        result;
+
+      renderUsersTable();
+
+    }
+
+
+    function renderUsersTable() {
+
+      const tbody =
+        $("allUsersTable");
+
+      $("userCountLabel")
+        .textContent =
+        `${filteredUsers.length} user${
+          filteredUsers.length === 1
+            ? ""
+            : "s"
+        }`;
+
+
+      if (!filteredUsers.length) {
+
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7">
+              <div class="empty-state">
+                <i class="fa-solid fa-users-slash"></i>
+                <div>
+                  No users found.
+                </div>
+              </div>
+            </td>
+          </tr>
+        `;
+
+        return;
+      }
+
+
+      const sorted =
+        [...filteredUsers]
+          .sort(
+            (
+              a,
+              b
+            ) => {
+
+              const ad =
+                toDate(
+                  getLastActive(a)
+                );
+
+              const bd =
+                toDate(
+                  getLastActive(b)
+                );
+
+              return (
+                (bd?.getTime() || 0) -
+                (ad?.getTime() || 0)
+              );
+
+            }
+          );
+
+
+      tbody.innerHTML =
+        sorted
+          .map(
+            (user) => {
+
+              const uid =
+                user.uid;
+
+              return `
+                <tr>
+
+                  <td>
+                    ${userCellHtml(user)}
+                  </td>
+
+                  <td>
+                    ${genderSelectHtml(
+                      uid,
+                      getUserGender(user)
+                    )}
+                  </td>
+
+                  <td>
+                    ${accountBadge(user)}
+                  </td>
+
+                  <td>
+                    ${escapeHtml(
+                      getUserLocation(user)
+                    )}
+                  </td>
+
+                  <td>
+                    ${verifiedBadge(user)}
+                  </td>
+
+                  <td>
+                    ${formatDate(
+                      getLastActive(user)
+                    )}
+                  </td>
+
+                  <td>
+
+                    <div class="actions">
+
+                      <button
+                        class="btn btn-outline btn-sm"
+                        onclick="viewProfile('${encodeURIComponent(uid)}')"
+                      >
+                        <i class="fa-solid fa-eye"></i>
+                        View
+                      </button>
+
+                      <button
+                        class="btn btn-warning btn-sm"
+                        onclick="suspendUser('${encodeURIComponent(uid)}')"
+                      >
+                        <i class="fa-solid fa-pause"></i>
+                        Suspend
+                      </button>
+
+                      <button
+                        class="btn btn-danger btn-sm"
+                        onclick="blockUser('${encodeURIComponent(uid)}')"
+                      >
+                        <i class="fa-solid fa-ban"></i>
+                        Block
+                      </button>
+
+                    </div>
+
+                  </td>
+
+                </tr>
+              `;
+
+            }
+          )
+          .join("");
+
+    }
+
+
+    /* ==========================================================
+       RECENT USERS
+    =========================================================== */
+
+    function renderRecentUsers() {
+
+      const tbody =
+        $("recentUsersTable");
+
+      if (!allUsers.length) {
+
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6">
+              <div class="empty-state">
+                <i class="fa-solid fa-users"></i>
+                <div>
+                  No users available.
+                </div>
+              </div>
+            </td>
+          </tr>
+        `;
+
+        return;
+      }
+
+
+      const users =
+        [...allUsers]
+          .sort(
+            (a, b) =>
+              (
+                toDate(
+                  getLastActive(b)
+                )?.getTime() || 0
+              ) -
+              (
+                toDate(
+                  getLastActive(a)
+                )?.getTime() || 0
+              )
+          )
+          .slice(0, 10);
+
+
+      tbody.innerHTML =
+        users
+          .map(
+            (user) => {
+
+              const uid =
+                user.uid;
+
+              return `
+                <tr>
+
+                  <td>
+                    ${userCellHtml(user)}
+                  </td>
+
+                  <td>
+                    ${genderSelectHtml(
+                      uid,
+                      getUserGender(user)
+                    )}
+                  </td>
+
+                  <td>
+                    ${accountBadge(user)}
+                  </td>
+
+                  <td>
+                    ${escapeHtml(
+                      getUserLocation(user)
+                    )}
+                  </td>
+
+                  <td>
+                    ${formatDate(
+                      getLastActive(user)
+                    )}
+                  </td>
+
+                  <td>
+
+                    <button
+                      class="btn btn-outline btn-sm"
+                      onclick="viewProfile('${encodeURIComponent(uid)}')"
+                    >
+                      <i class="fa-solid fa-eye"></i>
+                      View
+                    </button>
+
+                  </td>
+
+                </tr>
+              `;
+
+            }
+          )
+          .join("");
+
+    }
+
+
+    /* ==========================================================
+       UPDATE GENDER
+    =========================================================== */
+
+    window.updateUserGender =
+      async function(
+        encodedUid,
+        gender
+      ) {
+
+        const uid =
+          decodeURIComponent(
+            encodedUid
+          );
+
+
+        try {
+
+          const userRef =
+            doc(
+              db,
+              "users",
+              uid
+            );
+
+
+          await updateDoc(
+            userRef,
+            {
+              gender:
+                gender || null
+            }
+          );
+
+
+          const localUser =
+            allUsers.find(
+              (user) =>
+                user.uid === uid
+            );
+
+
+          if (localUser) {
+            localUser.gender =
+              gender || null;
+          }
+
+
+          saveUsersCache();
+
+          applyUserFilters();
+
+          renderRecentUsers();
+
+          renderReportsTable();
+
+
+          if (
+            currentModalUid === uid
+          ) {
+
+            await viewProfile(
+              encodeURIComponent(uid)
+            );
+          }
+
+
+          showToast(
+            "Gender updated successfully."
+          );
+
+        } catch (error) {
+
+          console.error(
+            "updateUserGender:",
+            error
+          );
+
+          showToast(
+            "Failed to update gender: " +
+            error.message,
+            "error"
+          );
+
+        }
+
+      };
+
+
+    /* ==========================================================
+       USER SEARCH
+    =========================================================== */
+
+    $("userSearch")
+      .addEventListener(
+        "input",
+        (event) => {
+
+          currentUserSearch =
+            event.target.value
+              .trim();
+
+          applyUserFilters();
+
+        }
+      );
+
+
+    document
+      .querySelectorAll(
+        "[data-user-filter]"
+      )
+      .forEach(
+        (button) => {
+
+          button.addEventListener(
+            "click",
+            () => {
+
+              document
+                .querySelectorAll(
+                  "[data-user-filter]"
+                )
+                .forEach(
+                  (item) =>
+                    item.classList
+                      .remove("active")
+                );
+
+              button.classList
+                .add("active");
+
+              currentUserFilter =
+                button.dataset
+                  .userFilter;
+
+              applyUserFilters();
+
+            }
+          );
+
+        }
+      );
+
+
+    $("refreshUsersButton")
+      .addEventListener(
+        "click",
+        loadUsers
+      );
+
+
+    /* ==========================================================
+       USER STATS
+    =========================================================== */
+
+    function updateUserStats() {
+
+      $("statTotalUsers")
+        .textContent =
+        allUsers.length
+          .toLocaleString();
+
+      const activeToday =
+        allUsers.filter(
+          (user) =>
+            isToday(
+              getLastActive(user)
+            )
+        ).length;
+
+
+      $("statActiveToday")
+        .textContent =
+        activeToday.toLocaleString();
+
+    }
+
+
+    /* ==========================================================
+       REPORTS
+    =========================================================== */
+
+    async function loadReports() {
+
+      $("reportsTable").innerHTML = `
+        <tr>
+          <td colspan="7" class="loading-row">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            Loading reports...
+          </td>
+        </tr>
+      `;
+
+      try {
+
+        const snapshot =
+          await getDocs(
+            collection(db, "reports")
+          );
+
+
+        reports = [];
+
+        snapshot.forEach(
+          (documentSnapshot) => {
+
+            reports.push({
+              id:
+                documentSnapshot.id,
+
+              ...documentSnapshot.data()
+
+            });
+
+          }
+        );
+
+
+        groupReports();
+
+        renderReportsTable();
+
+        updateReportStats();
+
+      } catch (error) {
+
+        console.error(
+          "loadReports:",
+          error
+        );
+
+        $("reportsTable").innerHTML = `
+          <tr>
+            <td colspan="7">
+              <div class="empty-state">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <div>
+                  Failed to load reports.
+                </div>
+                <small>
+                  ${escapeHtml(error.message)}
+                </small>
+              </div>
+            </td>
+          </tr>
+        `;
+
+        showToast(
+          "Failed to load reports.",
+          "error"
+        );
+
+      }
+
+    }
+
+
+    function groupReports() {
+
+      const groups =
+        new Map();
+
+
+      reports.forEach(
+        (report) => {
+
+          const uid =
+            report.reportedUid ||
+            report.userId ||
+            report.uid;
+
+          if (!uid) {
+            return;
+          }
+
+
+          if (!groups.has(uid)) {
+
+            groups.set(
+              uid,
+              {
+                uid,
+                reports: [],
+                reasons: [],
+                status:
+                  report.status ||
+                  "pending",
+                latestReport:
+                  report.createdAt ||
+                  report.reportedAt ||
+                  report.timestamp ||
+                  null
+              }
+            );
+
+          }
+
+
+          const group =
+            groups.get(uid);
+
+          group.reports
+            .push(report);
+
+
+          const reason =
+            report.reason ||
+            report.reportReason ||
+            report.category ||
+            "Other";
+
+
+          if (
+            !group.reasons
+              .includes(reason)
+          ) {
+
+            group.reasons
+              .push(reason);
+
+          }
+
+
+          const date =
+            toDate(
+              report.createdAt ||
+              report.reportedAt ||
+              report.timestamp
+            );
+
+
+          const latestDate =
+            toDate(
+              group.latestReport
+            );
+
+
+          if (
+            date &&
+            (!latestDate ||
+              date > latestDate)
+          ) {
+
+            group.latestReport =
+              report.createdAt ||
+              report.reportedAt ||
+              report.timestamp;
+
+          }
+
+
+          if (
+            report.status ===
+            "pending"
+          ) {
+
+            group.status =
+              "pending";
+
+          } else if (
+            group.status !==
+            "pending"
+          ) {
+
+            group.status =
+              report.status ||
+              group.status;
+
+          }
+
+        }
+      );
+
+
+      groupedReports =
+        Array.from(
+          groups.values()
+        );
+
+    }
+
+
+    function getReportUser(uid) {
+
+      return (
+        allUsers.find(
+          (user) =>
+            user.uid === uid
+        ) || {
+          uid,
+          name: "Unknown User"
+        }
+      );
+
+    }
+
+
+    function reportStatusBadge(status) {
+
+      const normalized =
+        String(
+          status || "pending"
+        ).toLowerCase();
+
+
+      if (
+        normalized ===
+        "reviewed"
+      ) {
+
+        return `
+          <span class="badge badge-reviewed">
+            Reviewed
+          </span>
+        `;
+      }
+
+
+      if (
+        normalized ===
+        "dismissed"
+      ) {
+
+        return `
+          <span class="badge badge-dismissed">
+            Dismissed
+          </span>
+        `;
+      }
+
+
+      return `
+        <span class="badge badge-pending">
+          Pending
+        </span>
+      `;
+
+    }
+
+
+    function renderReportsTable() {
+
+      const tbody =
+        $("reportsTable");
+
+
+      let list =
+        [...groupedReports];
+
+
+      if (
+        currentReportSearch
+      ) {
+
+        const search =
+          currentReportSearch
+            .toLowerCase();
+
+
+        list =
+          list.filter(
+            (group) => {
+
+              const user =
+                getReportUser(
+                  group.uid
+                );
+
+
+              return [
+
+                getUserName(user),
+
+                getUserEmail(user),
+
+                group.uid,
+
+                ...group.reasons
+
+              ]
+                .join(" ")
+                .toLowerCase()
+                .includes(search);
+
+            }
+          );
+
+      }
+
+
+      $("reportCountLabel")
+        .textContent =
+        `${list.length} reported user${
+          list.length === 1
+            ? ""
+            : "s"
+        }`;
+
+
+      if (!list.length) {
+
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7">
+              <div class="empty-state">
+                <i class="fa-solid fa-flag"></i>
+                <div>
+                  No reports found.
+                </div>
+              </div>
+            </td>
+          </tr>
+        `;
+
+        return;
+      }
+
+
+      list.sort(
+        (a, b) =>
+          (
+            toDate(
+              b.latestReport
+            )?.getTime() || 0
+          ) -
+          (
+            toDate(
+              a.latestReport
+            )?.getTime() || 0
+          )
+      );
+
+
+      tbody.innerHTML =
+        list
+          .map(
+            (group) => {
+
+              const user =
+                getReportUser(
+                  group.uid
+                );
+
+
+              const uid =
+                group.uid;
+
+
+              const pending =
+                group.status ===
+                "pending";
+
+
+              const reasonsHtml =
+                group.reasons
+                  .slice(0, 5)
+                  .map(
+                    (reason) =>
+                      `
+                      <span class="report-reason">
+                        ${escapeHtml(reason)}
+                      </span>
+                      `
+                  )
+                  .join("");
+
+
+              return `
+                <tr>
+
+                  <td>
+
+                    ${userCellHtml(user)}
+
+                  </td>
+
+
+                  <td>
+
+                    ${genderSelectHtml(
+                      uid,
+                      getUserGender(user)
+                    )}
+
+                  </td>
+
+
+                  <td>
+
+                    <span class="badge badge-pending">
+                      ${group.reports.length}
+                    </span>
+
+                  </td>
+
+
+                  <td>
+
+                    <div class="report-reasons">
+                      ${reasonsHtml}
+                    </div>
+
+                  </td>
+
+
+                  <td>
+
+                    ${reportStatusBadge(
+                      group.status
+                    )}
+
+                  </td>
+
+
+                  <td>
+                    ${formatDate(
+                      group.latestReport
+                    )}
+                  </td>
+
+
+                  <td>
+
+                    <div class="actions">
+
+                      <!-- VIEW -->
+
+                      <button
+                        class="btn btn-info btn-sm"
+                        onclick="viewProfile('${encodeURIComponent(uid)}')"
+                      >
+                        <i class="fa-solid fa-eye"></i>
+                        View
+                      </button>
+
+
+                      <!-- SUSPEND -->
+
+                      <button
+                        class="btn btn-warning btn-sm"
+                        onclick="suspendUser('${encodeURIComponent(uid)}')"
+                      >
+                        <i class="fa-solid fa-pause"></i>
+                        Suspend
+                      </button>
+
+
+                      <!-- BLOCK -->
+
+                      <button
+                        class="btn btn-danger btn-sm"
+                        onclick="blockUser('${encodeURIComponent(uid)}')"
+                      >
+                        <i class="fa-solid fa-ban"></i>
+                        Block
+                      </button>
+
+
+                      <!-- DISMISS -->
+
+                      <button
+                        class="btn btn-secondary btn-sm"
+                        onclick="dismissReports('${encodeURIComponent(uid)}')"
+                      >
+                        <i class="fa-solid fa-xmark"></i>
+                        Dismiss
+                      </button>
+
+
+                      <!-- MARK REVIEWED -->
+
+                      ${
+                        pending
+                          ? `
+                          <button
+                            class="btn btn-success btn-sm"
+                            onclick="markReviewed('${encodeURIComponent(uid)}')"
+                          >
+                            <i class="fa-solid fa-check"></i>
+                            Mark Reviewed
+                          </button>
+                          `
+                          : ""
+                      }
+
+                    </div>
+
+                  </td>
+
+                </tr>
+              `;
+
+            }
+          )
+          .join("");
+
+    }
+
+
+    /* ==========================================================
+       REPORT SEARCH
+    =========================================================== */
+
+    $("reportSearch")
+      .addEventListener(
+        "input",
+        (event) => {
+
+          currentReportSearch =
+            event.target.value
+              .trim();
+
+          renderReportsTable();
+
+        }
+      );
+
+
+    $("refreshReportsButton")
+      .addEventListener(
+        "click",
+        loadReports
+      );
+
+
+    function updateReportStats() {
+
+      const pending =
+        reports.filter(
+          (report) =>
+            (
+              report.status ||
+              "pending"
+            ) ===
+            "pending"
+        ).length;
+
+
+      $("statPendingReports")
+        .textContent =
+        pending.toLocaleString();
+
+    }
+
+
+    /* ==========================================================
+       VIEW PROFILE
+    =========================================================== */
+
+    window.viewProfile =
+      async function(encodedUid) {
+
+        const uid =
+          decodeURIComponent(
+            encodedUid
+          );
+
+        currentModalUid =
+          uid;
+
+
+        $("userModalOverlay")
+          .classList
+          .add("show");
+
+
+        $("userModalBody").innerHTML = `
+          <div class="loading-row">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            Loading user...
+          </div>
+        `;
+
+
+        try {
+
+          let user =
+            allUsers.find(
+              (item) =>
+                item.uid === uid
+            );
+
+
+          if (!user) {
+
+            const snapshot =
+              await getDoc(
+                doc(
+                  db,
+                  "users",
+                  uid
+                )
+              );
+
+
+            if (
+              snapshot.exists()
+            ) {
+
+              user = {
+                ...snapshot.data(),
+                uid
+              };
+
+            } else {
+
+              user = {
+                uid,
+                name:
+                  "Unknown User"
+              };
+
+            }
+
+          }
+
+
+          const photo =
+            getUserPhoto(user);
+
+
+          $("userModalBody")
+            .innerHTML = `
+
+            <div class="profile-hero">
+
+              ${
+                photo
+                  ? `
+                    <img
+                      class="profile-big-avatar"
+                      src="${escapeHtml(photo)}"
+                      alt=""
+                      onclick="openImagePreview('${encodeURIComponent(photo)}')"
+                      style="cursor:zoom-in;"
+                    />
+                  `
+                  : `
+                    <div
+                      class="profile-big-avatar avatar-placeholder"
+                    >
+                      <i class="fa-solid fa-user"></i>
+                    </div>
+                  `
+              }
+
+
+              <div>
+
+                <div class="profile-name">
+                  ${escapeHtml(
+                    getUserName(user)
+                  )}
+                </div>
+
+                <div class="profile-email">
+                  ${escapeHtml(
+                    getUserEmail(user)
+                  )}
+                </div>
+
+                <div
+                  style="
+                    margin-top:8px;
+                    display:flex;
+                    gap:6px;
+                    flex-wrap:wrap;
+                  "
+                >
+                  ${accountBadge(user)}
+                  ${verifiedBadge(user)}
+                </div>
+
+              </div>
 
             </div>
 
 
-            <!-- =============================================
-                 BACK IMAGE 2
-            ============================================== -->
+            <div class="detail-grid">
 
-            <div class="hero-image-back back-two">
+              <div class="detail-item">
 
-              <img
-                src="assets/images/amina.jpg"
-                alt=""
-                loading="lazy"
-              >
+                <div class="detail-label">
+                  UID
+                </div>
+
+                <div class="detail-value">
+                  ${escapeHtml(uid)}
+                </div>
+
+              </div>
+
+
+              <div class="detail-item">
+
+                <div class="detail-label">
+                  Gender
+                </div>
+
+                <div class="detail-value">
+                  ${genderSelectHtml(
+                    uid,
+                    getUserGender(user)
+                  )}
+                </div>
+
+              </div>
+
+
+              <div class="detail-item">
+
+                <div class="detail-label">
+                  Location
+                </div>
+
+                <div class="detail-value">
+                  ${escapeHtml(
+                    getUserLocation(user)
+                  )}
+                </div>
+
+              </div>
+
+
+              <div class="detail-item">
+
+                <div class="detail-label">
+                  Account Type
+                </div>
+
+                <div class="detail-value">
+                  ${
+                    isPremiumUser(user)
+                      ? "Premium"
+                      : "Normal"
+                  }
+                </div>
+
+              </div>
+
+
+              <div class="detail-item">
+
+                <div class="detail-label">
+                  Verified
+                </div>
+
+                <div class="detail-value">
+                  ${
+                    isVerifiedUser(user)
+                      ? "Yes"
+                      : "No"
+                  }
+                </div>
+
+              </div>
+
+
+              <div class="detail-item">
+
+                <div class="detail-label">
+                  Last Active
+                </div>
+
+                <div class="detail-value">
+                  ${formatDate(
+                    getLastActive(user)
+                  )}
+                </div>
+
+              </div>
+
+
+              <div class="detail-item">
+
+                <div class="detail-label">
+                  Created At
+                </div>
+
+                <div class="detail-value">
+                  ${formatDate(
+                    user.createdAt
+                  )}
+                </div>
+
+              </div>
+
+
+              <div class="detail-item">
+
+                <div class="detail-label">
+                  Status
+                </div>
+
+                <div class="detail-value">
+                  ${
+                    user.isBlocked
+                      ? "Blocked"
+                      : user.isSuspended
+                      ? "Suspended"
+                      : "Active"
+                  }
+                </div>
+
+              </div>
 
             </div>
 
 
-            <!-- =============================================
-                 MAIN AMINA PROFILE
-            ============================================== -->
+            <div class="modal-actions">
 
-            <div class="hero-image-main">
+              <button
+                class="btn btn-warning"
+                onclick="suspendUser('${encodeURIComponent(uid)}')"
+              >
+                <i class="fa-solid fa-pause"></i>
+                Suspend
+              </button>
 
-              <img
-                src="assets/images/amina.jpg"
-                alt="Amina"
+
+              <button
+                class="btn btn-danger"
+                onclick="blockUser('${encodeURIComponent(uid)}')"
+              >
+                <i class="fa-solid fa-ban"></i>
+                Block
+              </button>
+
+
+              <button
+                class="btn btn-secondary"
+                onclick="closeUserModal()"
+              >
+                Close
+              </button>
+
+            </div>
+          `;
+
+        } catch (error) {
+
+          console.error(error);
+
+          $("userModalBody")
+            .innerHTML = `
+              <div class="empty-state">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <div>
+                  Failed to load profile.
+                </div>
+                <small>
+                  ${escapeHtml(
+                    error.message
+                  )}
+                </small>
+              </div>
+            `;
+
+        }
+
+      };
+
+
+    window.closeUserModal =
+      function() {
+
+        currentModalUid =
+          null;
+
+        $("userModalOverlay")
+          .classList
+          .remove("show");
+
+      };
+
+
+    /* ==========================================================
+       SUSPEND USER
+    =========================================================== */
+
+    window.suspendUser =
+      function(encodedUid) {
+
+        const uid =
+          decodeURIComponent(
+            encodedUid
+          );
+
+
+        openConfirmModal(
+          "Suspend User",
+          "Are you sure you want to suspend this user?",
+          async () => {
+
+            try {
+
+              await updateDoc(
+                doc(
+                  db,
+                  "users",
+                  uid
+                ),
+                {
+                  isSuspended: true,
+                  suspendedAt:
+                    Timestamp.now()
+                }
+              );
+
+
+              updateLocalUser(
+                uid,
+                {
+                  isSuspended: true,
+                  suspendedAt:
+                    Timestamp.now()
+                }
+              );
+
+
+              showToast(
+                "User suspended successfully."
+              );
+
+
+              renderUsersTable();
+
+              renderRecentUsers();
+
+              renderReportsTable();
+
+              closeUserModal();
+
+            } catch (error) {
+
+              console.error(error);
+
+              showToast(
+                "Failed to suspend user: " +
+                error.message,
+                "error"
+              );
+
+            }
+
+          }
+        );
+
+      };
+
+
+    /* ==========================================================
+       BLOCK USER
+    =========================================================== */
+
+    window.blockUser =
+      function(encodedUid) {
+
+        const uid =
+          decodeURIComponent(
+            encodedUid
+          );
+
+
+        openConfirmModal(
+          "Block User",
+          "Are you sure you want to block this user?",
+          async () => {
+
+            try {
+
+              await updateDoc(
+                doc(
+                  db,
+                  "users",
+                  uid
+                ),
+                {
+                  isBlocked: true,
+                  blockedAt:
+                    Timestamp.now()
+                }
+              );
+
+
+              updateLocalUser(
+                uid,
+                {
+                  isBlocked: true,
+                  blockedAt:
+                    Timestamp.now()
+                }
+              );
+
+
+              showToast(
+                "User blocked successfully."
+              );
+
+
+              renderUsersTable();
+
+              renderRecentUsers();
+
+              renderReportsTable();
+
+              closeUserModal();
+
+            } catch (error) {
+
+              console.error(error);
+
+              showToast(
+                "Failed to block user: " +
+                error.message,
+                "error"
+              );
+
+            }
+
+          }
+        );
+
+      };
+
+
+    /* ==========================================================
+       DISMISS REPORTS
+    =========================================================== */
+
+    window.dismissReports =
+      function(encodedUid) {
+
+        const uid =
+          decodeURIComponent(
+            encodedUid
+          );
+
+
+        openConfirmModal(
+          "Dismiss Reports",
+          "Mark all reports for this user as dismissed?",
+          async () => {
+
+            try {
+
+              const userReports =
+                reports.filter(
+                  (report) =>
+                    (
+                      report.reportedUid ||
+                      report.userId ||
+                      report.uid
+                    ) === uid
+                );
+
+
+              for (
+                const report of
+                userReports
+              ) {
+
+                await updateDoc(
+                  doc(
+                    db,
+                    "reports",
+                    report.id
+                  ),
+                  {
+                    status:
+                      "dismissed",
+                    reviewedAt:
+                      Timestamp.now(),
+                    reviewedBy:
+                      currentUser.uid
+                  }
+                );
+
+              }
+
+
+              userReports.forEach(
+                (report) => {
+
+                  report.status =
+                    "dismissed";
+
+                }
+              );
+
+
+              groupReports();
+
+              renderReportsTable();
+
+              updateReportStats();
+
+
+              showToast(
+                "Reports dismissed successfully."
+              );
+
+            } catch (error) {
+
+              console.error(error);
+
+              showToast(
+                "Failed to dismiss reports: " +
+                error.message,
+                "error"
+              );
+
+            }
+
+          }
+        );
+
+      };
+
+
+    /* ==========================================================
+       MARK REVIEWED
+    =========================================================== */
+
+    window.markReviewed =
+      function(encodedUid) {
+
+        const uid =
+          decodeURIComponent(
+            encodedUid
+          );
+
+
+        openConfirmModal(
+          "Mark Reviewed",
+          "Mark all pending reports for this user as reviewed?",
+          async () => {
+
+            try {
+
+              const userReports =
+                reports.filter(
+                  (report) =>
+                    (
+                      report.reportedUid ||
+                      report.userId ||
+                      report.uid
+                    ) === uid &&
+                    (
+                      report.status ||
+                      "pending"
+                    ) ===
+                    "pending"
+                );
+
+
+              for (
+                const report of
+                userReports
+              ) {
+
+                await updateDoc(
+                  doc(
+                    db,
+                    "reports",
+                    report.id
+                  ),
+                  {
+                    status:
+                      "reviewed",
+                    reviewedAt:
+                      Timestamp.now(),
+                    reviewedBy:
+                      currentUser.uid
+                  }
+                );
+
+              }
+
+
+              userReports.forEach(
+                (report) => {
+
+                  report.status =
+                    "reviewed";
+
+                }
+              );
+
+
+              groupReports();
+
+              renderReportsTable();
+
+              updateReportStats();
+
+
+              showToast(
+                "Reports marked as reviewed."
+              );
+
+            } catch (error) {
+
+              console.error(error);
+
+              showToast(
+                "Failed to mark reports reviewed: " +
+                error.message,
+                "error"
+              );
+
+            }
+
+          }
+        );
+
+      };
+
+
+    /* ==========================================================
+       LOCAL USER UPDATE
+    =========================================================== */
+
+    function updateLocalUser(
+      uid,
+      changes
+    ) {
+
+      const user =
+        allUsers.find(
+          (item) =>
+            item.uid === uid
+        );
+
+      if (user) {
+
+        Object.assign(
+          user,
+          changes
+        );
+
+      }
+
+      saveUsersCache();
+
+    }
+
+
+    /* ==========================================================
+       CONFIRM MODAL
+    =========================================================== */
+
+    function openConfirmModal(
+      title,
+      message,
+      callback
+    ) {
+
+      $("confirmTitle")
+        .textContent =
+        title;
+
+      $("confirmMessage")
+        .textContent =
+        message;
+
+      confirmCallback =
+        callback;
+
+      $("confirmModalOverlay")
+        .classList
+        .add("show");
+
+    }
+
+
+    window.closeConfirmModal =
+      function() {
+
+        $("confirmModalOverlay")
+          .classList
+          .remove("show");
+
+        confirmCallback =
+          null;
+
+      };
+
+
+    $("confirmActionButton")
+      .addEventListener(
+        "click",
+        async () => {
+
+          const callback =
+            confirmCallback;
+
+          if (!callback) {
+            return;
+          }
+
+          closeConfirmModal();
+
+          await callback();
+
+        }
+      );
+
+
+    /* ==========================================================
+       VERIFICATION REQUESTS
+    =========================================================== */
+
+    async function loadVerificationRequests() {
+
+      $("verificationTable").innerHTML = `
+        <tr>
+          <td colspan="5" class="loading-row">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            Loading verification requests...
+          </td>
+        </tr>
+      `;
+
+
+      try {
+
+        const snapshot =
+          await getDocs(
+            collection(
+              db,
+              "verification_requests"
+            )
+          );
+
+
+        verificationRequests = [];
+
+        snapshot.forEach(
+          (docSnapshot) => {
+
+            verificationRequests.push({
+              id:
+                docSnapshot.id,
+              ...docSnapshot.data()
+            });
+
+          }
+        );
+
+
+        renderVerificationTable();
+
+      } catch (error) {
+
+        console.error(error);
+
+        $("verificationTable").innerHTML = `
+          <tr>
+            <td colspan="5">
+              <div class="empty-state">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <div>
+                  Failed to load requests.
+                </div>
+              </div>
+            </td>
+          </tr>
+        `;
+
+        showToast(
+          "Failed to load verification requests.",
+          "error"
+        );
+
+      }
+
+    }
+
+
+    function renderVerificationTable() {
+
+      const pending =
+        verificationRequests.filter(
+          (request) =>
+            (
+              request.status ||
+              "pending"
+            ) ===
+            "pending"
+        );
+
+
+      $("verificationCount")
+        .textContent =
+        `${pending.length} pending`;
+
+
+      if (!pending.length) {
+
+        $("verificationTable")
+          .innerHTML = `
+            <tr>
+              <td colspan="5">
+                <div class="empty-state">
+                  <i class="fa-solid fa-circle-check"></i>
+                  <div>
+                    No pending verification requests.
+                  </div>
+                </div>
+              </td>
+            </tr>
+          `;
+
+        return;
+      }
+
+
+      $("verificationTable")
+        .innerHTML =
+        pending
+          .map(
+            (request) => {
+
+              const uid =
+                request.uid ||
+                request.id;
+
+
+              const user =
+                allUsers.find(
+                  (item) =>
+                    item.uid === uid
+                ) || {
+                  uid
+                };
+
+
+              const profilePhoto =
+                getUserPhoto(user);
+
+
+              const safePhotoUrl =
+                profilePhoto
+                  ? encodeURIComponent(
+                      profilePhoto
+                    )
+                  : "";
+
+
+              return `
+                <tr>
+
+                  <td>
+                    ${userCellHtml(user)}
+                  </td>
+
+
+                  <td>
+
+                    <div class="verification-preview">
+
+                      <div class="verification-preview-box">
+
+                        <div class="verification-preview-label">
+                          Verification Video
+                        </div>
+
+                        ${
+                          request.videoUrl
+                            ? `
+                              <video
+                                class="verification-video"
+                                controls
+                                preload="metadata"
+                                playsinline
+                                src="${escapeHtml(
+                                  request.videoUrl
+                                )}"
+                              >
+                                Your browser does not support HTML5 video.
+                              </video>
+                            `
+                            : `
+                              <div
+                                class="empty-state"
+                                style="padding:28px 12px;"
+                              >
+                                <i class="fa-solid fa-video-slash"></i>
+                                <div>
+                                  No verification video.
+                                </div>
+                              </div>
+                            `
+                        }
+
+                      </div>
+
+
+                      <div class="verification-preview-box">
+
+                        <div class="verification-preview-label">
+                          Profile Picture
+                        </div>
+
+                        ${
+                          profilePhoto
+                            ? `
+                              <img
+                                class="verification-photo"
+                                src="${escapeHtml(
+                                  profilePhoto
+                                )}"
+                                alt="${escapeHtml(
+                                  getUserName(user)
+                                )}"
+                                loading="lazy"
+                                onclick="openImagePreview('${safePhotoUrl}')"
+                                onerror="this.style.display='none';"
+                              />
+                            `
+                            : `
+                              <div
+                                class="verification-photo avatar-placeholder"
+                              >
+                                <i class="fa-solid fa-user"></i>
+                              </div>
+                            `
+                        }
+
+                      </div>
+
+                    </div>
+
+                  </td>
+
+
+                  <td>
+                    ${reportStatusBadge(
+                      request.status
+                    )}
+                  </td>
+
+
+                  <td>
+                    ${formatDate(
+                      request.submittedAt
+                    )}
+                  </td>
+
+
+                  <td>
+
+                    <div class="actions">
+
+                      <button
+                        class="btn btn-success btn-sm"
+                        onclick="approveVerification('${encodeURIComponent(
+                          request.id
+                        )}')"
+                      >
+                        <i class="fa-solid fa-check"></i>
+                        Approve
+                      </button>
+
+
+                      <button
+                        class="btn btn-danger btn-sm"
+                        onclick="rejectVerification('${encodeURIComponent(
+                          request.id
+                        )}')"
+                      >
+                        <i class="fa-solid fa-xmark"></i>
+                        Reject
+                      </button>
+
+                    </div>
+
+                  </td>
+
+                </tr>
+              `;
+
+            }
+          )
+          .join("");
+
+    }
+
+
+    window.approveVerification =
+      function(encodedId) {
+
+        const id =
+          decodeURIComponent(
+            encodedId
+          );
+
+
+        openConfirmModal(
+          "Approve Verification",
+          "Approve this user's video verification?",
+          async () => {
+
+            try {
+
+              await updateDoc(
+                doc(
+                  db,
+                  "verification_requests",
+                  id
+                ),
+                {
+                  status:
+                    "approved",
+                  reviewedAt:
+                    Timestamp.now(),
+                  reviewedBy:
+                    currentUser.uid
+                }
+              );
+
+
+              const request =
+                verificationRequests
+                  .find(
+                    (item) =>
+                      item.id === id
+                  );
+
+
+              if (request) {
+
+                request.status =
+                  "approved";
+
+              }
+
+
+              if (request?.uid) {
+
+                await updateDoc(
+                  doc(
+                    db,
+                    "users",
+                    request.uid
+                  ),
+                  {
+                    isVerified:
+                      true
+                  }
+                );
+
+
+                updateLocalUser(
+                  request.uid,
+                  {
+                    isVerified:
+                      true
+                  }
+                );
+
+              }
+
+
+              renderVerificationTable();
+
+              renderUsersTable();
+
+              renderRecentUsers();
+
+
+              showToast(
+                "Verification approved."
+              );
+
+            } catch (error) {
+
+              console.error(error);
+
+              showToast(
+                "Failed to approve verification: " +
+                error.message,
+                "error"
+              );
+
+            }
+
+          }
+        );
+
+      };
+
+
+    window.rejectVerification =
+      function(encodedId) {
+
+        const id =
+          decodeURIComponent(
+            encodedId
+          );
+
+
+        openConfirmModal(
+          "Reject Verification",
+          "Reject this verification request?",
+          async () => {
+
+            try {
+
+              await updateDoc(
+                doc(
+                  db,
+                  "verification_requests",
+                  id
+                ),
+                {
+                  status:
+                    "rejected",
+                  reviewedAt:
+                    Timestamp.now(),
+                  reviewedBy:
+                    currentUser.uid
+                }
+              );
+
+
+              const request =
+                verificationRequests
+                  .find(
+                    (item) =>
+                      item.id === id
+                  );
+
+
+              if (request) {
+
+                request.status =
+                  "rejected";
+
+              }
+
+
+              renderVerificationTable();
+
+
+              showToast(
+                "Verification rejected."
+              );
+
+            } catch (error) {
+
+              console.error(error);
+
+              showToast(
+                "Failed to reject verification: " +
+                error.message,
+                "error"
+              );
+
+            }
+
+          }
+        );
+
+      };
+
+
+    $("refreshVerificationButton")
+      .addEventListener(
+        "click",
+        loadVerificationRequests
+      );
+
+
+    /* ==========================================================
+       APP CONFIG
+    =========================================================== */
+
+    async function loadAppConfig() {
+
+      try {
+
+        const snapshot =
+          await getDoc(
+            doc(
+              db,
+              "app_config",
+              "update"
+            )
+          );
+
+
+        if (
+          !snapshot.exists()
+        ) {
+
+          $("minimumVersionCode")
+            .value = "";
+
+          $("latestVersionCode")
+            .value = "";
+
+          return;
+        }
+
+
+        const data =
+          snapshot.data();
+
+
+        $("minimumVersionCode")
+          .value =
+          data.minimumVersionCode ??
+          "";
+
+
+        $("latestVersionCode")
+          .value =
+          data.latestVersionCode ??
+          "";
+
+
+      } catch (error) {
+
+        console.error(
+          error
+        );
+
+        showToast(
+          "Failed to load app configuration.",
+          "error"
+        );
+
+      }
+
+    }
+
+
+    $("saveConfigButton")
+      .addEventListener(
+        "click",
+        async () => {
+
+          const minimumVersionCode =
+            Number(
+              $("minimumVersionCode")
+                .value
+            );
+
+
+          const latestVersionCode =
+            Number(
+              $("latestVersionCode")
+                .value
+            );
+
+
+          if (
+            !Number.isInteger(
+              minimumVersionCode
+            ) ||
+            minimumVersionCode < 1
+          ) {
+
+            showToast(
+              "Enter a valid Minimum Version Code.",
+              "warning"
+            );
+
+            return;
+
+          }
+
+
+          if (
+            !Number.isInteger(
+              latestVersionCode
+            ) ||
+            latestVersionCode < 1
+          ) {
+
+            showToast(
+              "Enter a valid Latest Version Code.",
+              "warning"
+            );
+
+            return;
+
+          }
+
+
+          if (
+            latestVersionCode <
+            minimumVersionCode
+          ) {
+
+            showToast(
+              "Latest Version Code cannot be lower than Minimum Version Code.",
+              "warning"
+            );
+
+            return;
+
+          }
+
+
+          try {
+
+            const button =
+              $("saveConfigButton");
+
+
+            button.disabled = true;
+
+            button.innerHTML = `
+              <i class="fa-solid fa-spinner fa-spin"></i>
+              Saving...
+            `;
+
+
+            await setDoc(
+              doc(
+                db,
+                "app_config",
+                "update"
+              ),
+              {
+                minimumVersionCode,
+                latestVersionCode,
+                forceUpdate: true,
+                updatedAt:
+                  Timestamp.now(),
+                updatedBy:
+                  currentUser.uid
+              },
+              {
+                merge: true
+              }
+            );
+
+
+            showToast(
+              "Update configuration saved successfully."
+            );
+
+
+          } catch (error) {
+
+            console.error(
+              error
+            );
+
+            showToast(
+              "Failed to save configuration: " +
+              error.message,
+              "error"
+            );
+
+          } finally {
+
+            const button =
+              $("saveConfigButton");
+
+
+            button.disabled = false;
+
+            button.innerHTML = `
+              <i class="fa-solid fa-floppy-disk"></i>
+              Save Configuration
+            `;
+
+          }
+
+        }
+      );
+
+
+    /* ==========================================================
+       BROADCAST
+    =========================================================== */
+
+    function getAnnouncements() {
+
+      try {
+
+        const raw =
+          localStorage.getItem(
+            "masoya_admin_announcements"
+          );
+
+        return raw
+          ? JSON.parse(raw)
+          : [];
+
+      } catch (_) {
+
+        return [];
+
+      }
+
+    }
+
+
+    function saveAnnouncements(
+      announcements
+    ) {
+
+      try {
+
+        localStorage.setItem(
+          "masoya_admin_announcements",
+          JSON.stringify(
+            announcements
+          )
+        );
+
+      } catch (_) {}
+
+    }
+
+
+    async function loadAnnouncements() {
+
+      renderAnnouncements();
+
+    }
+
+
+    function renderAnnouncements() {
+
+      const list =
+        getAnnouncements();
+
+
+      if (!list.length) {
+
+        $("announcementsList")
+          .innerHTML = `
+            <div class="empty-state">
+              <i class="fa-solid fa-bullhorn"></i>
+              <div>
+                No announcements yet.
+              </div>
+            </div>
+          `;
+
+        return;
+      }
+
+
+      $("announcementsList")
+        .innerHTML =
+        list
+          .slice()
+          .reverse()
+          .map(
+            (announcement) => `
+
+              <div
+                style="
+                  border:1px solid var(--border);
+                  border-radius:12px;
+                  padding:13px;
+                  margin-bottom:9px;
+                "
               >
 
+                <div
+                  style="
+                    display:flex;
+                    justify-content:space-between;
+                    gap:10px;
+                  "
+                >
 
-              <div class="hero-image-overlay"></div>
+                  <strong style="font-size:13px;">
+                    ${escapeHtml(
+                      announcement.title
+                    )}
+                  </strong>
 
-
-              <div class="hero-profile-info">
-
-
-                <div class="hero-profile-name">
-
-                  Amina, 24
-
-                  <span class="verified">
-                    ✓
+                  <span
+                    style="
+                      color:var(--muted);
+                      font-size:10px;
+                    "
+                  >
+                    ${escapeHtml(
+                      announcement.audience
+                    )}
                   </span>
 
                 </div>
 
 
-                <div class="hero-profile-location">
-
-                  ⌖ Kano · 3 km away
-
+                <div
+                  style="
+                    margin-top:7px;
+                    font-size:12px;
+                    color:#4b5563;
+                    line-height:1.6;
+                  "
+                >
+                  ${escapeHtml(
+                    announcement.message
+                  )}
                 </div>
 
 
-                <div class="hero-profile-bio">
-
-                  Easygoing, ambitious, and always ready
-                  for a good conversation.
-
+                <div
+                  style="
+                    margin-top:7px;
+                    font-size:10px;
+                    color:#9ca3af;
+                  "
+                >
+                  ${formatDate(
+                    announcement.createdAt
+                  )}
                 </div>
 
               </div>
 
-            </div>
+            `
+          )
+          .join("");
 
+    }
 
-            <!-- =============================================
-                 MATCH BANNER
-            ============================================== -->
 
-            <div
-              class="floating-card like-card"
-              aria-label="It's a match"
-            >
+    $("saveBroadcastButton")
+      .addEventListener(
+        "click",
+        async () => {
 
-              <div class="floating-icon like-icon">
-                ♥
-              </div>
+          const title =
+            $("broadcastTitle")
+              .value
+              .trim();
 
 
-              <div class="floating-card-copy">
+          const message =
+            $("broadcastMessage")
+              .value
+              .trim();
 
-                <strong>
-                  It's a match
-                </strong>
 
-                <span>
-                  You both liked each other
-                </span>
+          const audience =
+            $("broadcastAudience")
+              .value;
 
-              </div>
 
-            </div>
+          if (!title) {
 
+            showToast(
+              "Enter announcement title.",
+              "warning"
+            );
 
-            <!-- =============================================
-                 MESSAGE BANNER
-            ============================================== -->
+            return;
 
-            <div
-              class="floating-card message-card"
-              aria-label="New message"
-            >
+          }
 
-              <div class="message-avatar">
-                M
-              </div>
 
+          if (!message) {
 
-              <div class="floating-card-copy">
+            showToast(
+              "Enter announcement message.",
+              "warning"
+            );
 
-                <strong>
-                  New message
-                </strong>
+            return;
 
-                <span>
-                  Hey, nice to meet you ✨
-                </span>
+          }
 
-              </div>
 
-            </div>
+          const announcements =
+            getAnnouncements();
 
 
-          </div>
+          announcements.push({
+            title,
+            message,
+            audience,
+            createdAt:
+              new Date().toISOString(),
+            createdBy:
+              currentUser.uid
+          });
 
 
-          <!-- =================================================
-               SEPARATE HERO DOWNLOAD BUTTON
-               NOT INSIDE ANY BANNER
-          ================================================== -->
+          saveAnnouncements(
+            announcements
+          );
 
-          <div class="hero-download-wrap">
 
-            <a
-              class="hero-download-btn"
-              href="https://play.google.com/store/apps/details?id=com.nemaj.masoya"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Download Masoya on Google Play"
-            >
+          $("broadcastTitle")
+            .value = "";
 
-              <span class="hero-download-icon">
 
-                <img
-                  src="assets/images/google-play.png"
-                  alt=""
-                >
+          $("broadcastMessage")
+            .value = "";
 
-              </span>
 
+          renderAnnouncements();
 
-              <span class="hero-download-content">
 
-                <small>
-                  Available now on
-                </small>
+          showToast(
+            "Announcement saved."
+          );
 
-                <strong>
-                  Google Play
-                </strong>
+        }
+      );
 
-              </span>
 
+    /* ==========================================================
+       DASHBOARD
+    =========================================================== */
 
-              <span class="hero-download-arrow">
-                →
-              </span>
+    async function refreshDashboard() {
 
-            </a>
+      if (!allUsers.length) {
+        return;
+      }
 
-          </div>
 
+      updateUserStats();
 
-        </div>
+      updateReportStats();
 
-      </div>
 
-    </section>
+      try {
 
+        const matchesSnapshot =
+          await getDocs(
+            collection(
+              db,
+              "matches"
+            )
+          );
 
-    <!-- =====================================================
-         CONNECTION STRIP
-    ====================================================== -->
 
-    <section
-      class="connection-strip section-sm"
-    >
+        $("statMatches")
+          .textContent =
+          matchesSnapshot.size
+            .toLocaleString();
 
-      <div
-        class="container connection-strip-inner"
-      >
+      } catch (error) {
 
-        <span class="muted-label">
-          BUILT FOR SIMPLE CONNECTIONS
-        </span>
+        console.error(
+          "Matches:",
+          error
+        );
 
+        $("statMatches")
+          .textContent =
+          "—";
 
-        <div class="mini-feature">
+      }
 
-          <span class="mini-dot"></span>
+    }
 
-          Discover
 
-        </div>
+    /* ==========================================================
+       CHARTS
+    =========================================================== */
 
+    function renderCharts() {
 
-        <div class="mini-feature">
+      const labels = [];
 
-          <span class="mini-dot pink"></span>
+      const userData = [];
 
-          Like
+      const matchData = [];
 
-        </div>
 
+      for (
+        let i = 29;
+        i >= 0;
+        i--
+      ) {
 
-        <div class="mini-feature">
+        const date =
+          new Date();
 
-          <span class="mini-dot red"></span>
+        date.setDate(
+          date.getDate() - i
+        );
 
-          Match
 
-        </div>
+        labels.push(
+          date.toLocaleDateString(
+            undefined,
+            {
+              month: "short",
+              day: "numeric"
+            }
+          )
+        );
 
 
-        <div class="mini-feature">
+        const endDate =
+          new Date(date);
 
-          <span class="mini-dot blue"></span>
+        endDate.setHours(
+          23,
+          59,
+          59,
+          999
+        );
 
-          Chat
 
-        </div>
+        const startDate =
+          new Date(date);
 
-      </div>
+        startDate.setHours(
+          0,
+          0,
+          0,
+          0
+        );
 
-    </section>
 
+        const usersCount =
+          allUsers.filter(
+            (user) => {
 
-    <!-- =====================================================
-         FEATURES
-    ====================================================== -->
+              const created =
+                toDate(
+                  user.createdAt
+                );
 
-    <section
-      class="section features-section"
-      id="features"
-    >
+              return (
+                created &&
+                created >= startDate &&
+                created <= endDate
+              );
 
-      <div class="container">
+            }
+          ).length;
 
 
-        <div
-          class="section-heading reveal"
-        >
+        userData.push(
+          usersCount
+        );
 
-          <div class="eyebrow">
-            Everything you need
-          </div>
 
+        matchData.push(0);
 
-          <h2>
+      }
 
-            Designed to make connection feel
 
-            <span class="gradient-text">
-              natural.
-            </span>
+      if (userGrowthChart) {
+        userGrowthChart.destroy();
+      }
 
-          </h2>
 
+      if (matchesChart) {
+        matchesChart.destroy();
+      }
 
-          <p>
 
-            Masoya keeps the experience focused:
-            discover people, understand the profile,
-            choose your action, and keep the conversation going.
+      const userCtx =
+        $("userGrowthChart")
+          .getContext("2d");
 
-          </p>
 
-        </div>
+      userGrowthChart =
+        new Chart(
+          userCtx,
+          {
+            type: "line",
 
+            data: {
+              labels,
 
-        <div class="feature-photo-grid">
+              datasets: [
+                {
+                  label:
+                    "New Users",
 
+                  data:
+                    userData,
 
-          <!-- =================================================
-               DISCOVER
-          ================================================== -->
+                  tension: 0.35,
 
-          <article
-            class="feature-photo-card reveal"
-          >
+                  borderWidth: 2,
 
-            <div class="feature-photo">
+                  fill: true,
 
-              <img
-                src="assets/images/abdullahi.jpg"
-                alt="Discover"
-                loading="lazy"
-              >
+                  backgroundColor:
+                    "rgba(255,13,27,0.08)",
 
-              <div class="feature-photo-gradient"></div>
+                  borderColor:
+                    "#ff0d1b",
 
-              <div class="photo-label">
-                Discover
-              </div>
+                  pointRadius: 2
 
-            </div>
+                }
+              ]
+            },
 
+            options: {
 
-            <div class="feature-photo-content">
+              responsive: true,
 
-              <span class="feature-number">
-                01
-              </span>
+              maintainAspectRatio: false,
 
+              plugins: {
+                legend: {
+                  display: false
+                }
+              },
 
-              <h3>
-                Smart discovery
-              </h3>
+              scales: {
 
+                y: {
+                  beginAtZero: true,
+                  ticks: {
+                    precision: 0
+                  }
+                },
 
-              <p>
+                x: {
+                  grid: {
+                    display: false
+                  }
+                }
 
-                Browse real profiles in a smooth
-                experience and discover people
-                who catch your attention.
+              }
 
-              </p>
+            }
+          }
+        );
 
-            </div>
 
-          </article>
+      const matchCtx =
+        $("matchesChart")
+          .getContext("2d");
 
 
-          <!-- =================================================
-               MATCH
-          ================================================== -->
+      matchesChart =
+        new Chart(
+          matchCtx,
+          {
+            type: "line",
 
-          <article
-            class="feature-photo-card reveal reveal-delay"
-          >
+            data: {
+              labels,
 
-            <div class="feature-photo">
+              datasets: [
+                {
+                  label:
+                    "Matches",
 
-              <img
-                src="assets/images/maryam.jpg"
-                alt="Likes and matches"
-                loading="lazy"
-              >
+                  data:
+                    matchData,
 
-              <div class="feature-photo-gradient"></div>
+                  tension: 0.35,
 
-              <div class="photo-label">
-                Like & Match
-              </div>
+                  borderWidth: 2,
 
-            </div>
+                  fill: true,
 
+                  backgroundColor:
+                    "rgba(78,205,196,0.08)",
 
-            <div class="feature-photo-content">
+                  borderColor:
+                    "#4ecdc4",
 
-              <span class="feature-number">
-                02
-              </span>
+                  pointRadius: 2
 
+                }
+              ]
+            },
 
-              <h3>
-                Likes & matches
-              </h3>
+            options: {
 
+              responsive: true,
 
-              <p>
+              maintainAspectRatio: false,
 
-                Show interest when someone catches
-                your attention. Mutual interest becomes
-                a meaningful match.
+              plugins: {
+                legend: {
+                  display: false
+                }
+              },
 
-              </p>
+              scales: {
 
-            </div>
+                y: {
+                  beginAtZero: true,
+                  ticks: {
+                    precision: 0
+                  }
+                },
 
-          </article>
+                x: {
+                  grid: {
+                    display: false
+                  }
+                }
 
+              }
 
-          <!-- =================================================
-               CHAT
-          ================================================== -->
+            }
+          }
+        );
 
-          <article
-            class="feature-photo-card reveal reveal-delay-2"
-          >
+    }
 
-            <div class="feature-photo">
 
-              <img
-                src="assets/images/hauwa.jpg"
-                alt="Chat"
-                loading="lazy"
-              >
+    /* ==========================================================
+       IMAGE PREVIEW
+    =========================================================== */
 
-              <div class="feature-photo-gradient"></div>
+    window.openImagePreview =
+      function(encodedUrl) {
 
-              <div class="photo-label">
-                Chat
-              </div>
+        const url =
+          decodeURIComponent(
+            encodedUrl
+          );
 
-            </div>
 
+        imageScale = 1;
 
-            <div class="feature-photo-content">
+        imageOffsetX = 0;
 
-              <span class="feature-number">
-                03
-              </span>
+        imageOffsetY = 0;
 
 
-              <h3>
-                Meaningful chat
-              </h3>
+        $("previewImage")
+          .src = url;
 
 
-              <p>
+        applyImageTransform();
 
-                Move from a profile to a private
-                conversation and start getting
-                to know each other.
 
-              </p>
+        $("imagePreviewOverlay")
+          .classList
+          .add("show");
 
-            </div>
+      };
 
-          </article>
 
+    window.closeImagePreview =
+      function() {
 
-          <!-- =================================================
-               PROFILE
-          ================================================== -->
+        $("imagePreviewOverlay")
+          .classList
+          .remove("show");
 
-          <article
-            class="feature-photo-card reveal"
-          >
+        $("previewImage")
+          .src = "";
 
-            <div class="feature-photo">
+      };
 
-              <img
-                src="assets/images/nazeer.jpg"
-                alt="Profile"
-                loading="lazy"
-              >
 
-              <div class="feature-photo-gradient"></div>
+    window.zoomImage =
+      function(amount) {
 
-              <div class="photo-label">
-                Your profile
-              </div>
+        imageScale += amount;
 
-            </div>
+        imageScale =
+          Math.min(
+            5,
+            Math.max(
+              0.5,
+              imageScale
+            )
+          );
 
+        applyImageTransform();
 
-            <div class="feature-photo-content">
+      };
 
-              <span class="feature-number">
-                04
-              </span>
 
+    window.resetImageZoom =
+      function() {
 
-              <h3>
-                Profile control
-              </h3>
+        imageScale = 1;
 
+        imageOffsetX = 0;
 
-              <p>
+        imageOffsetY = 0;
 
-                Shape how your profile appears
-                and control how you interact
-                with people you meet.
+        applyImageTransform();
 
-              </p>
+      };
 
-            </div>
 
-          </article>
+    function applyImageTransform() {
 
-        </div>
+      $("previewImage")
+        .style.transform =
+        `translate(
+          ${imageOffsetX}px,
+          ${imageOffsetY}px
+        )
+        scale(${imageScale})`;
 
-      </div>
+    }
 
-    </section>
 
+    /* ==========================================================
+       IMAGE DRAG
+    =========================================================== */
 
-    <!-- =====================================================
-         EXPERIENCE
-    ====================================================== -->
+    let dragging = false;
 
-    <section
-      class="section dark-section"
-      id="experience"
-    >
+    let startX = 0;
 
-      <div class="experience-bg-photo">
+    let startY = 0;
 
-        <img
-          src="assets/images/abdullahi.jpg"
-          alt=""
-          loading="lazy"
-        >
+    $("previewImage")
+      .addEventListener(
+        "pointerdown",
+        (event) => {
 
-      </div>
+          dragging = true;
 
+          startX =
+            event.clientX -
+            imageOffsetX;
 
-      <div class="experience-bg-overlay"></div>
+          startY =
+            event.clientY -
+            imageOffsetY;
 
 
-      <div class="container experience-grid">
+          $("previewImage")
+            .setPointerCapture(
+              event.pointerId
+            );
 
+        }
+      );
 
-        <div
-          class="experience-copy reveal"
-        >
 
-          <div class="eyebrow eyebrow-light">
-            A better flow
-          </div>
+    $("previewImage")
+      .addEventListener(
+        "pointermove",
+        (event) => {
 
+          if (!dragging) {
+            return;
+          }
 
-          <h2>
 
-            Less scrolling.
-            More
+          imageOffsetX =
+            event.clientX -
+            startX;
 
-            <span class="gradient-text">
-              connection.
-            </span>
+          imageOffsetY =
+            event.clientY -
+            startY;
 
-          </h2>
 
+          applyImageTransform();
 
-          <p>
+        }
+      );
 
-            Masoya combines visual discovery with
-            simple actions so the important part —
-            getting to know someone — stays at the center.
 
-          </p>
+    $("previewImage")
+      .addEventListener(
+        "pointerup",
+        () => {
+          dragging = false;
+        }
+      );
 
 
-          <div class="step-list">
+    $("previewImage")
+      .addEventListener(
+        "pointercancel",
+        () => {
+          dragging = false;
+        }
+      );
 
 
-            <div class="step active">
+    /* ==========================================================
+       OVERLAY CLOSE
+    =========================================================== */
 
-              <span class="step-number">
-                01
-              </span>
+    $("userModalOverlay")
+      .addEventListener(
+        "click",
+        (event) => {
 
-              <div>
+          if (
+            event.target ===
+            $("userModalOverlay")
+          ) {
 
-                <strong>
-                  Discover
-                </strong>
+            closeUserModal();
 
-                <p>
-                  See profiles with the information
-                  that helps you decide.
-                </p>
+          }
 
-              </div>
+        }
+      );
 
-            </div>
 
+    $("confirmModalOverlay")
+      .addEventListener(
+        "click",
+        (event) => {
 
-            <div class="step">
+          if (
+            event.target ===
+            $("confirmModalOverlay")
+          ) {
 
-              <span class="step-number">
-                02
-              </span>
+            closeConfirmModal();
 
-              <div>
+          }
 
-                <strong>
-                  Choose
-                </strong>
+        }
+      );
 
-                <p>
-                  Like, pass, open a profile,
-                  or start a conversation.
-                </p>
 
-              </div>
+    $("imagePreviewOverlay")
+      .addEventListener(
+        "click",
+        (event) => {
 
-            </div>
+          if (
+            event.target ===
+            $("imagePreviewOverlay")
+          ) {
 
+            closeImagePreview();
 
-            <div class="step">
+          }
 
-              <span class="step-number">
-                03
-              </span>
+        }
+      );
 
-              <div>
 
-                <strong>
-                  Connect
-                </strong>
+    /* ==========================================================
+       LOGOUT
+    =========================================================== */
 
-                <p>
-                  Turn mutual interest into a match
-                  and keep talking.
-                </p>
+    $("logoutButton")
+      .addEventListener(
+        "click",
+        async () => {
 
-              </div>
+          try {
 
-            </div>
+            await signOut(auth);
 
+          } catch (error) {
 
-          </div>
+            console.error(error);
 
-        </div>
+            showToast(
+              "Failed to logout.",
+              "error"
+            );
 
+          }
 
-        <div
-          class="experience-visual reveal reveal-delay"
-        >
+        }
+      );
 
-          <div class="experience-photo-main">
 
-            <img
-              src="assets/images/couple.jpg"
-              alt="Two people connecting"
-              loading="lazy"
-            >
+    /* ==========================================================
+       KEYBOARD SHORTCUTS
+    =========================================================== */
 
-            <div class="experience-photo-overlay"></div>
+    document.addEventListener(
+      "keydown",
+      (event) => {
 
+        if (
+          event.key ===
+          "Escape"
+        ) {
 
-            <div class="experience-photo-text">
+          closeUserModal();
 
-              <span>
-                Masoya
-              </span>
+          closeConfirmModal();
 
-              <strong>
-                Meet. Match. Connect.
-              </strong>
+          closeImagePreview();
 
-            </div>
+          closeSidebarMobile();
 
-          </div>
+        }
 
+      }
+    );
 
-          <div class="experience-photo-small small-one">
 
-            <img
-              src="assets/images/ahmed.jpg"
-              alt=""
-              loading="lazy"
-            >
+    /* ==========================================================
+       RESIZE
+    =========================================================== */
 
-          </div>
+    window.addEventListener(
+      "resize",
+      () => {
 
+        if (
+          window.innerWidth >
+          992
+        ) {
 
-          <div class="experience-photo-small small-two">
+          closeSidebarMobile();
 
-            <img
-              src="assets/images/hauwa.jpg"
-              alt=""
-              loading="lazy"
-            >
+        }
 
-          </div>
+      }
+    );
 
-        </div>
-
-      </div>
-
-    </section>
-
-
-    <!-- =====================================================
-         SAFETY
-    ====================================================== -->
-
-    <section
-      class="section safety-section"
-      id="safety"
-    >
-
-      <div class="container safety-grid">
-
-
-        <div class="safety-visual reveal">
-
-          <div class="safety-image-bg">
-
-            <img
-              src="assets/images/fatima.jpg"
-              alt=""
-              loading="lazy"
-            >
-
-          </div>
-
-
-          <div class="safety-image-card">
-
-            <img
-              src="assets/images/abdullahi.jpg"
-              alt=""
-              loading="lazy"
-            >
-
-            <div class="safety-image-overlay"></div>
-
-
-            <div class="safety-image-title">
-              Your choice matters.
-            </div>
-
-          </div>
-
-
-          <div class="shield-ring">
-
-            <div class="shield">
-              ✓
-            </div>
-
-          </div>
-
-        </div>
-
-
-        <div
-          class="safety-copy reveal reveal-delay"
-        >
-
-          <div class="eyebrow">
-            Built with control in mind
-          </div>
-
-
-          <h2>
-
-            Your connection should stay
-
-            <span class="gradient-text">
-              your choice.
-            </span>
-
-          </h2>
-
-
-          <p>
-
-            Masoya includes profile visibility controls,
-            location visibility preferences, and blocking
-            tools so you can shape your experience.
-
-          </p>
-
-
-          <div class="safety-points">
-
-
-            <div>
-
-              <span>
-                ✓
-              </span>
-
-              <p>
-
-                <strong>
-                  Visibility controls
-                </strong>
-
-                <br>
-
-                Choose how your profile participates
-                in discovery.
-
-              </p>
-
-            </div>
-
-
-            <div>
-
-              <span>
-                ✓
-              </span>
-
-              <p>
-
-                <strong>
-                  Location preferences
-                </strong>
-
-                <br>
-
-                Keep location details private when
-                you prefer.
-
-              </p>
-
-            </div>
-
-
-            <div>
-
-              <span>
-                ✓
-              </span>
-
-              <p>
-
-                <strong>
-                  Block & manage
-                </strong>
-
-                <br>
-
-                Remove unwanted profiles from
-                your experience.
-
-              </p>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </div>
-
-    </section>
-
-
-    <!-- =====================================================
-         PHOTO WALL
-    ====================================================== -->
-
-    <section class="photo-wall-section">
-
-      <div class="photo-wall">
-
-
-        <div class="wall-image wall-large">
-
-          <img
-            src="assets/images/amina.jpg"
-            alt="Masoya community"
-            loading="lazy"
-          >
-
-        </div>
-
-
-        <div class="wall-image">
-
-          <img
-            src="assets/images/hauwa.jpg"
-            alt=""
-            loading="lazy"
-          >
-
-        </div>
-
-
-        <div class="wall-image">
-
-          <img
-            src="assets/images/nazeer.jpg"
-            alt=""
-            loading="lazy"
-          >
-
-        </div>
-
-
-        <div class="wall-image">
-
-          <img
-            src="assets/images/maryam.jpg"
-            alt=""
-            loading="lazy"
-          >
-
-        </div>
-
-
-        <div class="wall-image">
-
-          <img
-            src="assets/images/zainab.jpg"
-            alt=""
-            loading="lazy"
-          >
-
-        </div>
-
-
-        <div class="wall-image wall-wide">
-
-          <img
-            src="assets/images/lifestyle.jpg"
-            alt=""
-            loading="lazy"
-          >
-
-        </div>
-
-      </div>
-
-    </section>
-
-
-    <!-- =====================================================
-         DOWNLOAD SECTION
-    ====================================================== -->
-
-    <section
-      class="section"
-      id="download"
-    >
-
-      <div class="container">
-
-
-        <div class="download-box reveal">
-
-
-          <div class="download-background">
-
-            <img
-              src="assets/images/lifestyle.jpg"
-              alt=""
-              loading="lazy"
-            >
-
-          </div>
-
-
-          <div class="download-overlay"></div>
-
-
-          <div class="download-copy">
-
-            <div class="eyebrow eyebrow-white">
-              Ready when you are
-            </div>
-
-
-            <h2>
-
-              Start your next
-
-              <span>
-                connection.
-              </span>
-
-            </h2>
-
-
-            <p>
-
-              Download Masoya and discover a cleaner,
-              more focused way to meet people.
-
-            </p>
-
-
-            <a
-              class="btn download-btn"
-              href="https://play.google.com/store/apps/details?id=com.nemaj.masoya"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Get Masoya on Google Play"
-            >
-
-              <span class="play-store-icon">
-
-                <img
-                  src="assets/images/google-play.png"
-                  alt=""
-                >
-
-              </span>
-
-              Get Masoya on Google Play
-
-            </a>
-
-          </div>
-
-
-          <div class="download-badge">
-
-            <div class="badge-icon logo-badge">
-
-              <img
-                src="assets/logo.svg"
-                alt="Masoya"
-              >
-
-            </div>
-
-
-            <strong>
-              Masoya
-            </strong>
-
-
-            <span>
-              Meet. Match. Connect.
-            </span>
-
-
-            <div class="badge-line"></div>
-
-
-            <small>
-              Available on Android
-            </small>
-
-          </div>
-
-        </div>
-
-      </div>
-
-    </section>
-
-  </main>
-
-
-  <!-- =======================================================
-       FOOTER
-  ======================================================== -->
-
-  <footer class="site-footer">
-
-    <div class="container footer-grid">
-
-
-      <div class="footer-brand">
-
-        <a
-          class="brand"
-          href="#top"
-        >
-
-          <span class="logo-box">
-
-            <img
-              src="assets/logo.svg"
-              alt="Masoya"
-              class="brand-mark"
-            >
-
-          </span>
-
-          <span class="brand-name">
-            Masoya
-          </span>
-
-        </a>
-
-
-        <p>
-          Modern connections,
-          thoughtfully designed.
-        </p>
-
-      </div>
-
-
-      <div class="footer-links">
-
-
-        <div>
-
-          <strong>
-            Product
-          </strong>
-
-          <a href="#features">
-            Features
-          </a>
-
-          <a href="#experience">
-            Experience
-          </a>
-
-          <a href="#download">
-            Download
-          </a>
-
-        </div>
-
-
-        <div>
-
-          <strong>
-            Legal
-          </strong>
-
-          <a
-            href="https://masoyaapp.github.io/privacy-policy/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Privacy Policy
-          </a>
-
-          <a
-            href="https://masoyaapp.github.io/terms/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Terms of Service
-          </a>
-
-        </div>
-
-
-        <div>
-
-          <strong>
-            Contact
-          </strong>
-
-          <a href="mailto:masoyaapp@gmail.com">
-            masoyaapp@gmail.com
-          </a>
-
-          <a
-            href="https://masoyaapp.github.io/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            masoyaapp.github.io
-          </a>
-
-        </div>
-
-
-      </div>
-
-    </div>
-
-
-    <div class="container footer-bottom">
-
-      <span>
-
-        ©
-        <span id="year"></span>
-        Masoya. All rights reserved.
-
-      </span>
-
-
-      <span>
-        Made for meaningful connections.
-      </span>
-
-    </div>
-
-  </footer>
-
-
-  <!-- =======================================================
-       JAVASCRIPT
-  ======================================================== -->
-
-  <script
-    src="assets/js/main.js"
-    defer
-  ></script>
+  </script>
 
 </body>
-
 </html>
