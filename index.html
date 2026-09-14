@@ -1062,16 +1062,18 @@
 
     .verification-preview {
       display: grid;
-      grid-template-columns: minmax(240px, 1.35fr) minmax(125px, 0.65fr);
-      gap: 8px;
-      min-width: 370px;
+      grid-template-columns: minmax(420px, 1.55fr) minmax(220px, 0.75fr);
+      gap: 12px;
+      min-width: 680px;
+      align-items: stretch;
     }
 
     .verification-preview-box {
       border: 1px solid var(--border);
       border-radius: 12px;
       background: #f8fafc;
-      padding: 8px;
+      padding: 10px;
+      min-width: 0;
     }
 
     .verification-preview-label {
@@ -1085,32 +1087,62 @@
 
     .verification-video {
       width: 100%;
-      height: 175px;
+      height: 260px;
       display: block;
       object-fit: contain;
-      background: #0f172a;
+      background: #020617;
       border-radius: 9px;
     }
 
     .verification-photo {
       width: 100%;
-      height: 175px;
+      height: 260px;
       display: block;
-      object-fit: cover;
+      object-fit: contain;
       background: #e5e7eb;
       border-radius: 9px;
       cursor: zoom-in;
     }
 
+    .verification-date {
+      margin-top: 8px;
+      padding: 8px 10px;
+      border-radius: 9px;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      color: #475569;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .verification-video-error {
+      display: none;
+      margin-top: 8px;
+      padding: 9px 10px;
+      border-radius: 9px;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+      font-size: 10px;
+      line-height: 1.5;
+    }
+
+    .verification-video-actions {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
     @media (max-width: 900px) {
       .verification-preview {
         grid-template-columns: 1fr;
-        min-width: 260px;
+        min-width: 300px;
       }
 
       .verification-video,
       .verification-photo {
-        height: 220px;
+        height: 240px;
       }
     }
 
@@ -1741,6 +1773,8 @@
           </div>
 
           <div class="topbar-right">
+
+            <span id="globalSyncStatus" style="font-size:11px;color:#64748b;"></span>
 
             <div class="status-pill">
               <span class="status-dot"></span>
@@ -3699,37 +3733,152 @@
 
     async function initializeAdmin() {
 
-      await loadUsers();
+      const hasUsers = hydrateUsersCache();
+      const hasReports = hydrateReportsCache();
+      const hasVerification = hydrateVerificationCache();
+      const hasConfig = hydrateAppConfigCache();
 
-      await loadReports();
-
-      await loadVerificationRequests();
-
-      await loadAppConfig();
-
-      await loadAnnouncements();
+      // Cached data appears immediately. Firebase refreshes silently afterwards.
+      await Promise.allSettled([
+        loadUsers({ silent: hasUsers }),
+        loadReports({ silent: hasReports }),
+        loadVerificationRequests({ silent: hasVerification }),
+        loadAppConfig({ silent: hasConfig }),
+        loadAnnouncements()
+      ]);
 
       await refreshDashboard();
-
       renderCharts();
-
     }
 
+
+    /* ==========================================================
+       PERSISTENT CACHE / SILENT REFRESH
+    =========================================================== */
+
+    const CACHE_PREFIX = "masoya_admin_memory_v5_";
+    const CACHE_TTL_MS = 15 * 60 * 1000;
+
+    function writeCache(key, data) {
+      try {
+        localStorage.setItem(
+          CACHE_PREFIX + key,
+          JSON.stringify({ savedAt: Date.now(), data })
+        );
+      } catch (error) {
+        console.warn("Admin cache write failed:", key, error);
+      }
+    }
+
+    function readCache(key) {
+      try {
+        const raw = localStorage.getItem(CACHE_PREFIX + key);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed || !parsed.data) return null;
+        return parsed;
+      } catch (error) {
+        console.warn("Admin cache read failed:", key, error);
+        return null;
+      }
+    }
+
+    function cacheIsFresh(entry) {
+      return !!entry && (Date.now() - (entry.savedAt || 0)) < CACHE_TTL_MS;
+    }
+
+    function showSyncStatus(message = "Updating…") {
+      const existing = $("globalSyncStatus");
+      if (existing) existing.textContent = message;
+    }
+
+    function hideSyncStatus() {
+      const existing = $("globalSyncStatus");
+      if (existing) existing.textContent = "";
+    }
+
+    function compactUserForCache(user) {
+      return {
+        uid: user.uid || user.id || "",
+        name: user.name || user.displayName || user.fullName || "",
+        fullName: user.fullName || "",
+        email: user.email || "",
+        gender: user.gender || "",
+        age: user.age ?? "",
+        location: user.location || "",
+        city: user.city || "",
+        state: user.state || "",
+        country: user.country || "",
+        photoUrl: user.photoUrl || user.photoURL || user.image || "",
+        isPremium: user.isPremium === true,
+        premium: user.premium === true,
+        plan: user.plan || "",
+        subscriptionStatus: user.subscriptionStatus || "",
+        isVerified: user.isVerified === true,
+        verified: user.verified === true,
+        isBlocked: user.isBlocked === true,
+        isSuspended: user.isSuspended === true,
+        accountStatus: user.accountStatus || "",
+        lastActiveAt: user.lastActiveAt || null,
+        lastSeen: user.lastSeen || null,
+        updatedAt: user.updatedAt || null,
+        createdAt: user.createdAt || null
+      };
+    }
+
+    function hydrateUsersCache() {
+      const entry = readCache("users");
+      if (!entry || !Array.isArray(entry.data)) return false;
+      allUsers = entry.data;
+      applyUserFilters();
+      renderRecentUsers();
+      updateUserStats();
+      return true;
+    }
+
+    function hydrateReportsCache() {
+      const entry = readCache("reports");
+      if (!entry || !Array.isArray(entry.data)) return false;
+      reports = entry.data;
+      groupReports();
+      renderReportsTable();
+      updateReportStats();
+      return true;
+    }
+
+    function hydrateVerificationCache() {
+      const entry = readCache("verification");
+      if (!entry || !Array.isArray(entry.data)) return false;
+      verificationRequests = entry.data;
+      renderVerificationTable();
+      return true;
+    }
+
+    function hydrateAppConfigCache() {
+      const entry = readCache("app_config");
+      if (!entry || !entry.data) return false;
+      fillAppConfig(entry.data);
+      return true;
+    }
 
     /* ==========================================================
        USERS
     =========================================================== */
 
-    async function loadUsers() {
+    async function loadUsers({ silent = false } = {}) {
 
-      $("allUsersTable").innerHTML = `
-        <tr>
-          <td colspan="7" class="loading-row">
-            <i class="fa-solid fa-spinner fa-spin"></i>
-            Loading users...
-          </td>
-        </tr>
-      `;
+      if (!silent) {
+        $("allUsersTable").innerHTML = `
+          <tr>
+            <td colspan="7" class="loading-row">
+              <i class="fa-solid fa-spinner fa-spin"></i>
+              Loading users...
+            </td>
+          </tr>
+        `;
+      } else {
+        showSyncStatus("Refreshing users…");
+      }
 
       try {
 
@@ -3758,6 +3907,7 @@
 
 
         saveUsersCache();
+        writeCache("users", allUsers.slice(0, 5000).map(compactUserForCache));
 
         applyUserFilters();
 
@@ -3772,27 +3922,30 @@
           error
         );
 
-        $("allUsersTable").innerHTML = `
-          <tr>
-            <td colspan="7">
-              <div class="empty-state">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-                <div>
-                  Failed to load users.
+        if (!silent) {
+          $("allUsersTable").innerHTML = `
+            <tr>
+              <td colspan="7">
+                <div class="empty-state">
+                  <i class="fa-solid fa-triangle-exclamation"></i>
+                  <div>
+                    Failed to load users.
+                  </div>
+                  <small>
+                    ${escapeHtml(error.message)}
+                  </small>
                 </div>
-                <small>
-                  ${escapeHtml(error.message)}
-                </small>
-              </div>
-            </td>
-          </tr>
-        `;
+              </td>
+            </tr>
+          `;
+          showToast(
+            "Failed to load users.",
+            "error"
+          );
+        }
 
-        showToast(
-          "Failed to load users.",
-          "error"
-        );
-
+      } finally {
+        hideSyncStatus();
       }
 
     }
@@ -3976,6 +4129,9 @@
 
                   <td>
                     ${userCellHtml(user)}
+                    <div style="margin-top:6px;color:#64748b;font-size:10px;">
+                      Submitted: ${formatDate(submittedValue)}
+                    </div>
                   </td>
 
                   <td>
@@ -4336,16 +4492,20 @@
        REPORTS
     =========================================================== */
 
-    async function loadReports() {
+    async function loadReports({ silent = false } = {}) {
 
-      $("reportsTable").innerHTML = `
-        <tr>
-          <td colspan="7" class="loading-row">
-            <i class="fa-solid fa-spinner fa-spin"></i>
-            Loading reports...
-          </td>
-        </tr>
-      `;
+      if (!silent) {
+        $("reportsTable").innerHTML = `
+          <tr>
+            <td colspan="7" class="loading-row">
+              <i class="fa-solid fa-spinner fa-spin"></i>
+              Loading reports...
+            </td>
+          </tr>
+        `;
+      } else {
+        showSyncStatus("Refreshing reports…");
+      }
 
       try {
 
@@ -4373,6 +4533,7 @@
 
 
         groupReports();
+        writeCache("reports", reports.slice(0, 5000));
 
         renderReportsTable();
 
@@ -4385,27 +4546,31 @@
           error
         );
 
-        $("reportsTable").innerHTML = `
-          <tr>
-            <td colspan="7">
-              <div class="empty-state">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-                <div>
-                  Failed to load reports.
+        if (!silent) {
+          $("reportsTable").innerHTML = `
+            <tr>
+              <td colspan="7">
+                <div class="empty-state">
+                  <i class="fa-solid fa-triangle-exclamation"></i>
+                  <div>
+                    Failed to load reports.
+                  </div>
+                  <small>
+                    ${escapeHtml(error.message)}
+                  </small>
                 </div>
-                <small>
-                  ${escapeHtml(error.message)}
-                </small>
-              </div>
-            </td>
-          </tr>
-        `;
+              </td>
+            </tr>
+          `;
 
-        showToast(
-          "Failed to load reports.",
-          "error"
-        );
+          showToast(
+            "Failed to load reports.",
+            "error"
+          );
+        }
 
+      } finally {
+        hideSyncStatus();
       }
 
     }
@@ -5598,6 +5763,7 @@
       }
 
       saveUsersCache();
+      writeCache("users", allUsers.slice(0, 5000).map(compactUserForCache));
 
     }
 
@@ -5667,16 +5833,20 @@
        VERIFICATION REQUESTS
     =========================================================== */
 
-    async function loadVerificationRequests() {
+    async function loadVerificationRequests({ silent = false } = {}) {
 
-      $("verificationTable").innerHTML = `
-        <tr>
-          <td colspan="5" class="loading-row">
-            <i class="fa-solid fa-spinner fa-spin"></i>
-            Loading verification requests...
-          </td>
-        </tr>
-      `;
+      if (!silent) {
+        $("verificationTable").innerHTML = `
+          <tr>
+            <td colspan="5" class="loading-row">
+              <i class="fa-solid fa-spinner fa-spin"></i>
+              Loading verification requests...
+            </td>
+          </tr>
+        `;
+      } else {
+        showSyncStatus("Refreshing verification…");
+      }
 
 
       try {
@@ -5705,30 +5875,35 @@
         );
 
 
+        writeCache("verification", verificationRequests.slice(0, 1000));
         renderVerificationTable();
 
       } catch (error) {
 
         console.error(error);
 
-        $("verificationTable").innerHTML = `
-          <tr>
-            <td colspan="5">
-              <div class="empty-state">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-                <div>
-                  Failed to load requests.
+        if (!silent) {
+          $("verificationTable").innerHTML = `
+            <tr>
+              <td colspan="5">
+                <div class="empty-state">
+                  <i class="fa-solid fa-triangle-exclamation"></i>
+                  <div>
+                    Failed to load requests.
+                  </div>
                 </div>
-              </div>
-            </td>
-          </tr>
-        `;
+              </td>
+            </tr>
+          `;
 
-        showToast(
-          "Failed to load verification requests.",
-          "error"
-        );
+          showToast(
+            "Failed to load verification requests.",
+            "error"
+          );
+        }
 
+      } finally {
+        hideSyncStatus();
       }
 
     }
@@ -5795,6 +5970,21 @@
               const profilePhoto =
                 getUserPhoto(user);
 
+              const videoUrl =
+                request.videoUrl ||
+                request.videoURL ||
+                request.verificationVideoUrl ||
+                request.verificationVideoURL ||
+                request.video ||
+                "";
+
+              const submittedValue =
+                request.submittedAt ||
+                request.createdAt ||
+                request.created_at ||
+                request.timestamp ||
+                null;
+
 
               const safePhotoUrl =
                 profilePhoto
@@ -5823,19 +6013,50 @@
                         </div>
 
                         ${
-                          request.videoUrl
+                          videoUrl
                             ? `
                               <video
+                                id="verification-video-${escapeHtml(request.id)}"
                                 class="verification-video"
                                 controls
-                                preload="metadata"
+                                preload="auto"
                                 playsinline
-                                src="${escapeHtml(
-                                  request.videoUrl
-                                )}"
+                                webkit-playsinline
+                                controlsList="nodownload"
+                                src="${escapeHtml(videoUrl)}"
+                                onerror="showVerificationVideoError('${encodeURIComponent(request.id)}')"
                               >
+                                <source src="${escapeHtml(videoUrl)}" type="video/mp4">
                                 Your browser does not support HTML5 video.
                               </video>
+
+                              <div
+                                id="verification-video-error-${escapeHtml(request.id)}"
+                                class="verification-video-error"
+                              >
+                                Video could not be played in the embedded player.
+                                You can still open the original video directly.
+                              </div>
+
+                              <div class="verification-video-actions">
+                                <button
+                                  class="btn btn-outline btn-sm"
+                                  type="button"
+                                  onclick="openVerificationVideo('${encodeURIComponent(videoUrl)}')"
+                                >
+                                  <i class="fa-solid fa-up-right-from-square"></i>
+                                  Open Video
+                                </button>
+
+                                <button
+                                  class="btn btn-secondary btn-sm"
+                                  type="button"
+                                  onclick="retryVerificationVideo('${encodeURIComponent(request.id)}')"
+                                >
+                                  <i class="fa-solid fa-rotate-right"></i>
+                                  Retry
+                                </button>
+                              </div>
                             `
                             : `
                               <div
@@ -5899,9 +6120,10 @@
 
 
                   <td>
-                    ${formatDate(
-                      request.submittedAt
-                    )}
+                    <div class="verification-date">
+                      <i class="fa-regular fa-calendar"></i>
+                      ${formatDate(submittedValue)}
+                    </div>
                   </td>
 
 
@@ -5942,6 +6164,34 @@
           .join("");
 
     }
+
+
+    window.showVerificationVideoError = function(encodedId) {
+      const id = decodeURIComponent(encodedId);
+      const errorBox = $("verification-video-error-" + id);
+      if (errorBox) errorBox.style.display = "block";
+    };
+
+    window.retryVerificationVideo = function(encodedId) {
+      const id = decodeURIComponent(encodedId);
+      const video = $("verification-video-" + id);
+      const errorBox = $("verification-video-error-" + id);
+      if (!video) return;
+      if (errorBox) errorBox.style.display = "none";
+      try {
+        video.pause();
+        video.load();
+        const playPromise = video.play();
+        if (playPromise && typeof playPromise.catch === "function") {
+          playPromise.catch(() => {});
+        }
+      } catch (_) {}
+    };
+
+    window.openVerificationVideo = function(encodedUrl) {
+      const url = decodeURIComponent(encodedUrl);
+      window.open(url, "_blank", "noopener,noreferrer");
+    };
 
 
     window.approveVerification =
@@ -6019,6 +6269,7 @@
               }
 
 
+              writeCache("verification", verificationRequests.slice(0, 1000));
               renderVerificationTable();
 
               renderUsersTable();
@@ -6097,6 +6348,7 @@
               }
 
 
+              writeCache("verification", verificationRequests.slice(0, 1000));
               renderVerificationTable();
 
 
@@ -6132,8 +6384,16 @@
     /* ==========================================================
        APP CONFIG
     =========================================================== */
+    function fillAppConfig(data) {
+      if (!data) return;
+      $("minimumVersionCode").value = data.minimumVersionCode ?? "";
+      $("latestVersionCode").value = data.latestVersionCode ?? "";
+    }
 
-    async function loadAppConfig() {
+
+    async function loadAppConfig({ silent = false } = {}) {
+
+      if (silent) showSyncStatus("Refreshing app config…");
 
       try {
 
@@ -6151,11 +6411,13 @@
           !snapshot.exists()
         ) {
 
-          $("minimumVersionCode")
-            .value = "";
+          if (!silent) {
+            $("minimumVersionCode")
+              .value = "";
 
-          $("latestVersionCode")
-            .value = "";
+            $("latestVersionCode")
+              .value = "";
+          }
 
           return;
         }
@@ -6164,17 +6426,8 @@
         const data =
           snapshot.data();
 
-
-        $("minimumVersionCode")
-          .value =
-          data.minimumVersionCode ??
-          "";
-
-
-        $("latestVersionCode")
-          .value =
-          data.latestVersionCode ??
-          "";
+        fillAppConfig(data);
+        writeCache("app_config", data);
 
 
       } catch (error) {
@@ -6183,11 +6436,15 @@
           error
         );
 
-        showToast(
-          "Failed to load app configuration.",
-          "error"
-        );
+        if (!silent) {
+          showToast(
+            "Failed to load app configuration.",
+            "error"
+          );
+        }
 
+      } finally {
+        hideSyncStatus();
       }
 
     }
@@ -6280,6 +6537,14 @@
             `;
 
 
+            const nextConfig = {
+              minimumVersionCode,
+              latestVersionCode,
+              forceUpdate: false,
+              updatedAt: new Date().toISOString(),
+              updatedBy: currentUser.uid
+            };
+
             await setDoc(
               doc(
                 db,
@@ -6303,6 +6568,9 @@
               }
             );
 
+
+            writeCache("app_config", nextConfig);
+            fillAppConfig(nextConfig);
 
             showToast(
               "Update configuration saved successfully."
