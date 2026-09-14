@@ -771,7 +771,22 @@
       align-items: center;
       flex-wrap: wrap;
       gap: 6px;
-      min-width: 300px;
+      min-width: 360px;
+    }
+
+    /* Keep the moderation actions visible on desktop even when the
+       table is wider than the viewport. */
+    th:last-child,
+    td:last-child {
+      position: sticky;
+      right: 0;
+      background: #ffffff;
+      z-index: 4;
+      box-shadow: -8px 0 14px rgba(15, 23, 42, 0.06);
+    }
+
+    th:last-child {
+      z-index: 5;
     }
 
     .gender-select {
@@ -1047,9 +1062,9 @@
 
     .verification-preview {
       display: grid;
-      grid-template-columns: minmax(260px, 1.45fr) minmax(130px, 0.75fr);
-      gap: 10px;
-      min-width: 390px;
+      grid-template-columns: minmax(240px, 1.35fr) minmax(125px, 0.65fr);
+      gap: 8px;
+      min-width: 370px;
     }
 
     .verification-preview-box {
@@ -1070,7 +1085,7 @@
 
     .verification-video {
       width: 100%;
-      height: 190px;
+      height: 175px;
       display: block;
       object-fit: contain;
       background: #0f172a;
@@ -1079,7 +1094,7 @@
 
     .verification-photo {
       width: 100%;
-      height: 190px;
+      height: 175px;
       display: block;
       object-fit: cover;
       background: #e5e7eb;
@@ -1245,6 +1260,118 @@
       padding: 4px 7px;
       font-size: 9px;
       font-weight: 700;
+    }
+
+
+    /* =========================================================
+       FULL SECTION MODE
+    ========================================================== */
+
+    .section-full-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 18px 22px;
+      background: #ffffff;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .section-back-button {
+      width: 42px;
+      height: 42px;
+      flex: 0 0 42px;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      background: #ffffff;
+      color: #374151;
+      display: grid;
+      place-items: center;
+      font-size: 16px;
+      transition: var(--transition);
+    }
+
+    .section-back-button:hover {
+      color: var(--primary);
+      border-color: rgba(255,13,27,.25);
+      background: var(--primary-light);
+    }
+
+    .section-full-title strong {
+      display: block;
+      font-size: 17px;
+      line-height: 1.2;
+    }
+
+    .section-full-title span {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .app-shell.section-mode .sidebar {
+      display: none;
+    }
+
+    .app-shell.section-mode .main {
+      width: 100%;
+      margin-left: 0;
+    }
+
+    .app-shell.section-mode .topbar {
+      display: none;
+    }
+
+    .app-shell.section-mode .content {
+      padding: 0;
+      min-height: 100vh;
+    }
+
+    .app-shell.section-mode .page.active {
+      min-height: 100vh;
+    }
+
+    .app-shell.section-mode .section-head {
+      padding: 22px 22px 0;
+    }
+
+    .app-shell.section-mode .page > .toolbar,
+    .app-shell.section-mode .page > .card,
+    .app-shell.section-mode .page > .grid-2,
+    .app-shell.section-mode .page > .section-head {
+      margin-left: 22px;
+      margin-right: 22px;
+    }
+
+    .app-shell.section-mode .page > .card:last-child {
+      margin-bottom: 22px;
+    }
+
+    @media (max-width: 700px) {
+      .section-full-header {
+        padding: 13px 14px;
+      }
+
+      .section-back-button {
+        width: 40px;
+        height: 40px;
+        flex-basis: 40px;
+      }
+
+      .section-full-title strong {
+        font-size: 15px;
+      }
+
+      .app-shell.section-mode .page > .toolbar,
+      .app-shell.section-mode .page > .card,
+      .app-shell.section-mode .page > .grid-2,
+      .app-shell.section-mode .page > .section-head {
+        margin-left: 14px;
+        margin-right: 14px;
+      }
     }
 
     /* =========================================================
@@ -1867,6 +1994,25 @@
             id="page-users"
           >
 
+            <div class="section-full-header">
+
+              <button
+                class="section-back-button"
+                type="button"
+                onclick="showPage('dashboard')"
+                aria-label="Back to Dashboard"
+                title="Back to Dashboard"
+              >
+                <i class="fa-solid fa-arrow-left"></i>
+              </button>
+
+              <div class="section-full-title">
+                <strong>All Users</strong>
+                <span>Manage normal and premium Masoya users</span>
+              </div>
+
+            </div>
+
             <div class="section-head">
 
               <h2>All Users</h2>
@@ -1993,6 +2139,25 @@
             id="page-reports"
           >
 
+            <div class="section-full-header">
+
+              <button
+                class="section-back-button"
+                type="button"
+                onclick="showPage('dashboard')"
+                aria-label="Back to Dashboard"
+                title="Back to Dashboard"
+              >
+                <i class="fa-solid fa-arrow-left"></i>
+              </button>
+
+              <div class="section-full-title">
+                <strong>Reports & Actions</strong>
+                <span>Review reports and moderate users</span>
+              </div>
+
+            </div>
+
             <div class="section-head">
 
               <h2>Reports &amp; Actions</h2>
@@ -2095,6 +2260,25 @@
             class="page"
             id="page-broadcast"
           >
+
+            <div class="section-full-header">
+
+              <button
+                class="section-back-button"
+                type="button"
+                onclick="showPage('dashboard')"
+                aria-label="Back to Dashboard"
+                title="Back to Dashboard"
+              >
+                <i class="fa-solid fa-arrow-left"></i>
+              </button>
+
+              <div class="section-full-title">
+                <strong>Broadcast</strong>
+                <span>Manage announcements</span>
+              </div>
+
+            </div>
 
             <div class="section-head">
 
@@ -2227,6 +2411,25 @@
             id="page-verification"
           >
 
+            <div class="section-full-header">
+
+              <button
+                class="section-back-button"
+                type="button"
+                onclick="showPage('dashboard')"
+                aria-label="Back to Dashboard"
+                title="Back to Dashboard"
+              >
+                <i class="fa-solid fa-arrow-left"></i>
+              </button>
+
+              <div class="section-full-title">
+                <strong>Video Verification</strong>
+                <span>Review verification requests</span>
+              </div>
+
+            </div>
+
             <div class="section-head">
 
               <h2>Video Verification</h2>
@@ -2307,6 +2510,25 @@
             class="page"
             id="page-config"
           >
+
+            <div class="section-full-header">
+
+              <button
+                class="section-back-button"
+                type="button"
+                onclick="showPage('dashboard')"
+                aria-label="Back to Dashboard"
+                title="Back to Dashboard"
+              >
+                <i class="fa-solid fa-arrow-left"></i>
+              </button>
+
+              <div class="section-full-title">
+                <strong>App Config</strong>
+                <span>Manage application configuration</span>
+              </div>
+
+            </div>
 
             <div class="section-head">
 
@@ -2389,8 +2611,8 @@
                         line-height:1.5;
                       "
                     >
-                      Users below this build number are notified
-                      but can continue using the app.
+                      Optional. Users below this build number are
+                      notified but can continue using the app.
                     </div>
 
                   </div>
@@ -3216,6 +3438,16 @@
 
     window.showPage =
       async function(page) {
+
+        const appShell =
+          document.querySelector(".app-shell");
+
+        if (appShell) {
+          appShell.classList.toggle(
+            "section-mode",
+            page !== "dashboard"
+          );
+        }
 
         document
           .querySelectorAll(".page")
@@ -5973,11 +6205,15 @@
             );
 
 
+          const rawLatestVersionCode =
+            $("latestVersionCode")
+              .value
+              .trim();
+
           const latestVersionCode =
-            Number(
-              $("latestVersionCode")
-                .value
-            );
+            rawLatestVersionCode === ""
+              ? null
+              : Number(rawLatestVersionCode);
 
 
           if (
@@ -5998,14 +6234,15 @@
 
 
           if (
-            !Number.isInteger(
-              latestVersionCode
-            ) ||
-            latestVersionCode < 1
+            latestVersionCode !== null &&
+            (
+              !Number.isInteger(latestVersionCode) ||
+              latestVersionCode < 1
+            )
           ) {
 
             showToast(
-              "Enter a valid Latest Version Code.",
+              "Latest Version Code must be empty or a valid positive build number.",
               "warning"
             );
 
@@ -6015,8 +6252,8 @@
 
 
           if (
-            latestVersionCode <
-            minimumVersionCode
+            latestVersionCode !== null &&
+            latestVersionCode < minimumVersionCode
           ) {
 
             showToast(
@@ -6052,7 +6289,10 @@
               {
                 minimumVersionCode,
                 latestVersionCode,
-                forceUpdate: true,
+                // Legacy app versions only understand forceUpdate + latestVersionCode.
+                // Keep this false so old builds receive an optional update prompt
+                // instead of being force-blocked by the new minimum-version policy.
+                forceUpdate: false,
                 updatedAt:
                   Timestamp.now(),
                 updatedBy:
