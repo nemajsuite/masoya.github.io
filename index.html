@@ -1060,89 +1060,214 @@
        VERIFICATION PREVIEW
     ========================================================== */
 
-    .verification-preview {
+    .verification-list {
       display: grid;
-      grid-template-columns: minmax(420px, 1.55fr) minmax(220px, 0.75fr);
-      gap: 12px;
-      min-width: 680px;
-      align-items: stretch;
+      grid-template-columns: repeat(1, minmax(0, 1fr));
+      gap: 18px;
+      padding: 18px;
     }
 
-    .verification-preview-box {
+    .verification-card {
       border: 1px solid var(--border);
-      border-radius: 12px;
-      background: #f8fafc;
-      padding: 10px;
+      border-radius: 16px;
+      background: #ffffff;
+      overflow: hidden;
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+    }
+
+    .verification-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border);
+      background: #fbfcfe;
+    }
+
+    .verification-user-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
       min-width: 0;
     }
 
-    .verification-preview-label {
+    .verification-user-info .user-cell {
+      min-width: 0;
+    }
+
+    .verification-card-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .verification-content {
+      display: grid;
+      grid-template-columns: minmax(0, 1.55fr) minmax(260px, .85fr);
+      gap: 18px;
+      padding: 18px;
+    }
+
+    .verification-panel {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: #f8fafc;
+      padding: 12px;
+      min-width: 0;
+    }
+
+    .verification-panel-label {
       color: #6b7280;
-      font-size: 9px;
+      font-size: 10px;
       font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: .05em;
-      margin-bottom: 7px;
+      letter-spacing: .06em;
+      margin-bottom: 9px;
     }
 
     .verification-video {
       width: 100%;
-      height: 260px;
+      height: min(480px, 52vh);
+      min-height: 320px;
       display: block;
       object-fit: contain;
       background: #020617;
-      border-radius: 9px;
+      border-radius: 11px;
+    }
+
+    .verification-video-pending {
+      background: #020617;
+    }
+
+    .verification-video.is-ready {
+      outline: 1px solid rgba(78, 205, 196, 0.25);
+    }
+
+    .verification-photo-wrap {
+      width: 100%;
+      min-height: 320px;
+      height: min(480px, 52vh);
+      border-radius: 11px;
+      overflow: hidden;
+      background: #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .verification-photo {
       width: 100%;
-      height: 260px;
+      height: 100%;
       display: block;
       object-fit: contain;
       background: #e5e7eb;
-      border-radius: 9px;
       cursor: zoom-in;
     }
 
     .verification-date {
-      margin-top: 8px;
-      padding: 8px 10px;
-      border-radius: 9px;
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
       background: #ffffff;
       border: 1px solid var(--border);
-      color: #475569;
-      font-size: 11px;
+      color: #334155;
+      font-size: 12px;
       font-weight: 700;
+    }
+
+    .verification-video-status {
+      margin-top: 10px;
+      color: #64748b;
+      font-size: 11px;
+      line-height: 1.55;
     }
 
     .verification-video-error {
       display: none;
-      margin-top: 8px;
-      padding: 9px 10px;
-      border-radius: 9px;
+      margin-top: 9px;
+      padding: 10px 11px;
+      border-radius: 10px;
       background: #fef2f2;
       border: 1px solid #fecaca;
       color: #991b1b;
-      font-size: 10px;
-      line-height: 1.5;
+      font-size: 11px;
+      line-height: 1.55;
     }
 
     .verification-video-actions {
       display: flex;
-      gap: 7px;
+      gap: 8px;
       flex-wrap: wrap;
-      margin-top: 8px;
+      margin-top: 9px;
     }
 
-    @media (max-width: 900px) {
-      .verification-preview {
+    .verification-card-actions {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 9px;
+      flex-wrap: wrap;
+      padding: 14px 18px;
+      border-top: 1px solid var(--border);
+      background: #fbfcfe;
+    }
+
+    .verification-empty {
+      padding: 55px 20px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .verification-empty i {
+      font-size: 30px;
+      margin-bottom: 12px;
+      opacity: .35;
+    }
+
+    @media (max-width: 950px) {
+      .verification-content {
         grid-template-columns: 1fr;
-        min-width: 300px;
       }
 
       .verification-video,
-      .verification-photo {
-        height: 240px;
+      .verification-photo-wrap {
+        height: 380px;
+      }
+    }
+
+    @media (max-width: 650px) {
+      .verification-list {
+        padding: 12px;
+      }
+
+      .verification-card-top {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .verification-card-meta {
+        justify-content: flex-start;
+      }
+
+      .verification-content {
+        padding: 12px;
+      }
+
+      .verification-video,
+      .verification-photo-wrap {
+        height: 300px;
+        min-height: 260px;
+      }
+
+      .verification-card-actions {
+        justify-content: stretch;
+      }
+
+      .verification-card-actions .btn {
+        flex: 1;
       }
     }
 
@@ -2498,37 +2623,11 @@
               </div>
 
 
-              <div class="table-wrap">
-
-                <table>
-
-                  <thead>
-
-                    <tr>
-                      <th>User</th>
-                      <th>Verification Preview</th>
-                      <th>Status</th>
-                      <th>Submitted</th>
-                      <th>Actions</th>
-                    </tr>
-
-                  </thead>
-
-                  <tbody id="verificationTable">
-
-                    <tr>
-                      <td
-                        colspan="5"
-                        class="loading-row"
-                      >
-                        Loading verification requests...
-                      </td>
-                    </tr>
-
-                  </tbody>
-
-                </table>
-
+              <div id="verificationTable" class="verification-list">
+                <div class="verification-empty">
+                  <i class="fa-solid fa-spinner fa-spin"></i>
+                  <div>Loading verification requests...</div>
+                </div>
               </div>
 
             </div>
@@ -5877,6 +5976,7 @@
 
         writeCache("verification", verificationRequests.slice(0, 1000));
         renderVerificationTable();
+        scheduleVerificationVideoPrefetch();
 
       } catch (error) {
 
@@ -5884,16 +5984,10 @@
 
         if (!silent) {
           $("verificationTable").innerHTML = `
-            <tr>
-              <td colspan="5">
-                <div class="empty-state">
-                  <i class="fa-solid fa-triangle-exclamation"></i>
-                  <div>
-                    Failed to load requests.
-                  </div>
-                </div>
-              </td>
-            </tr>
+            <div class="verification-empty">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+              <div>Failed to load requests.</div>
+            </div>
           `;
 
           showToast(
@@ -5921,34 +6015,21 @@
             "pending"
         );
 
-
       $("verificationCount")
         .textContent =
         `${pending.length} pending`;
 
-
       if (!pending.length) {
-
-        $("verificationTable")
-          .innerHTML = `
-            <tr>
-              <td colspan="5">
-                <div class="empty-state">
-                  <i class="fa-solid fa-circle-check"></i>
-                  <div>
-                    No pending verification requests.
-                  </div>
-                </div>
-              </td>
-            </tr>
-          `;
-
+        $("verificationTable").innerHTML = `
+          <div class="verification-empty">
+            <i class="fa-solid fa-circle-check"></i>
+            <div>No pending verification requests.</div>
+          </div>
+        `;
         return;
       }
 
-
-      $("verificationTable")
-        .innerHTML =
+      $("verificationTable").innerHTML =
         pending
           .map(
             (request) => {
@@ -5957,17 +6038,19 @@
                 request.uid ||
                 request.id;
 
-
               const user =
                 allUsers.find(
                   (item) =>
                     item.uid === uid
                 ) || {
-                  uid
+                  uid,
+                  fullName: request.name || "Unknown User",
+                  name: request.name || "Unknown User",
+                  photoUrl: request.photoUrl || ""
                 };
 
-
               const profilePhoto =
+                request.photoUrl ||
                 getUserPhoto(user);
 
               const videoUrl =
@@ -5985,214 +6068,327 @@
                 request.timestamp ||
                 null;
 
+              const requestId =
+                encodeURIComponent(request.id);
 
-              const safePhotoUrl =
-                profilePhoto
-                  ? encodeURIComponent(
-                      profilePhoto
-                    )
+              const encodedVideo =
+                videoUrl
+                  ? encodeURIComponent(videoUrl)
                   : "";
 
+              const encodedPhoto =
+                profilePhoto
+                  ? encodeURIComponent(profilePhoto)
+                  : "";
 
               return `
-                <tr>
+                <article class="verification-card">
 
-                  <td>
-                    ${userCellHtml(user)}
-                  </td>
+                  <div class="verification-card-top">
 
+                    <div class="verification-user-info">
+                      ${userCellHtml(user)}
+                    </div>
 
-                  <td>
+                    <div class="verification-card-meta">
+                      ${accountBadge(user)}
+                      ${verifiedBadge(user)}
+                      ${reportStatusBadge(request.status)}
+                    </div>
 
-                    <div class="verification-preview">
+                  </div>
 
-                      <div class="verification-preview-box">
+                  <div class="verification-content">
 
-                        <div class="verification-preview-label">
-                          Verification Video
-                        </div>
+                    <section class="verification-panel">
 
-                        ${
-                          videoUrl
-                            ? `
-                              <video
-                                id="verification-video-${escapeHtml(request.id)}"
-                                class="verification-video"
-                                controls
-                                preload="auto"
-                                playsinline
-                                webkit-playsinline
-                                controlsList="nodownload"
-                                src="${escapeHtml(videoUrl)}"
-                                onerror="showVerificationVideoError('${encodeURIComponent(request.id)}')"
-                              >
-                                <source src="${escapeHtml(videoUrl)}" type="video/mp4">
-                                Your browser does not support HTML5 video.
-                              </video>
-
-                              <div
-                                id="verification-video-error-${escapeHtml(request.id)}"
-                                class="verification-video-error"
-                              >
-                                Video could not be played in the embedded player.
-                                You can still open the original video directly.
-                              </div>
-
-                              <div class="verification-video-actions">
-                                <button
-                                  class="btn btn-outline btn-sm"
-                                  type="button"
-                                  onclick="openVerificationVideo('${encodeURIComponent(videoUrl)}')"
-                                >
-                                  <i class="fa-solid fa-up-right-from-square"></i>
-                                  Open Video
-                                </button>
-
-                                <button
-                                  class="btn btn-secondary btn-sm"
-                                  type="button"
-                                  onclick="retryVerificationVideo('${encodeURIComponent(request.id)}')"
-                                >
-                                  <i class="fa-solid fa-rotate-right"></i>
-                                  Retry
-                                </button>
-                              </div>
-                            `
-                            : `
-                              <div
-                                class="empty-state"
-                                style="padding:28px 12px;"
-                              >
-                                <i class="fa-solid fa-video-slash"></i>
-                                <div>
-                                  No verification video.
-                                </div>
-                              </div>
-                            `
-                        }
-
+                      <div class="verification-panel-label">
+                        Verification Video
                       </div>
 
+                      ${
+                        videoUrl
+                          ? `
+                            <video
+                              id="verification-video-${escapeHtml(request.id)}"
+                              class="verification-video verification-video-pending"
+                              controls
+                              preload="auto"
+                              playsinline
+                              webkit-playsinline
+                              poster="${escapeHtml(profilePhoto || "")}"
+                              data-video-src="${escapeHtml(videoUrl)}"
+                              onloadedmetadata="handleVerificationVideoLoaded('${requestId}')"
+                              oncanplay="handleVerificationVideoReady('${requestId}')"
+                              onerror="showVerificationVideoError('${requestId}')"
+                              onclick="ensureVerificationVideoSource('${requestId}')"
+                            >
+                              Your browser does not support HTML5 video.
+                            </video>
 
-                      <div class="verification-preview-box">
+                            <div class="verification-video-status">
+                              <i class="fa-solid fa-circle-info"></i>
+                              Video loads automatically in order, one at a time. Playback starts only when you press Play.
+                            </div>
 
-                        <div class="verification-preview-label">
-                          Profile Picture
-                        </div>
+                            <div
+                              id="verification-video-error-${escapeHtml(request.id)}"
+                              class="verification-video-error"
+                            >
+                              This browser could not play the embedded video. The original file can still be opened directly.
+                            </div>
+
+                            <div class="verification-video-actions">
+
+                              <button
+                                class="btn btn-outline btn-sm"
+                                type="button"
+                                onclick="openVerificationVideo('${encodedVideo}')"
+                              >
+                                <i class="fa-solid fa-up-right-from-square"></i>
+                                Open Video
+                              </button>
+
+                              <button
+                                class="btn btn-secondary btn-sm"
+                                type="button"
+                                onclick="retryVerificationVideo('${requestId}')"
+                              >
+                                <i class="fa-solid fa-rotate-right"></i>
+                                Reload Video
+                              </button>
+
+                            </div>
+                          `
+                          : `
+                            <div class="verification-empty" style="padding:55px 10px;">
+                              <i class="fa-solid fa-video-slash"></i>
+                              <div>No verification video URL was found.</div>
+                            </div>
+                          `
+                      }
+
+                    </section>
+
+                    <section class="verification-panel">
+
+                      <div class="verification-panel-label">
+                        Profile Picture
+                      </div>
+
+                      <div class="verification-photo-wrap">
 
                         ${
                           profilePhoto
                             ? `
                               <img
                                 class="verification-photo"
-                                src="${escapeHtml(
-                                  profilePhoto
-                                )}"
-                                alt="${escapeHtml(
-                                  getUserName(user)
-                                )}"
+                                src="${escapeHtml(profilePhoto)}"
+                                alt="${escapeHtml(getUserName(user))}"
                                 loading="lazy"
-                                onclick="openImagePreview('${safePhotoUrl}')"
-                                onerror="this.style.display='none';"
+                                onclick="openImagePreview('${encodedPhoto}')"
+                                onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\"verification-empty\" style=\"padding:30px;\"><i class=\"fa-solid fa-image\"></i><div>Profile picture could not be loaded.</div></div>';"
                               />
                             `
                             : `
-                              <div
-                                class="verification-photo avatar-placeholder"
-                              >
+                              <div class="verification-empty" style="padding:30px;">
                                 <i class="fa-solid fa-user"></i>
+                                <div>No profile picture available.</div>
                               </div>
                             `
                         }
 
                       </div>
 
-                    </div>
+                      <div class="verification-date">
+                        <i class="fa-regular fa-calendar"></i>
+                        Submitted:
+                        ${formatDate(submittedValue)}
+                      </div>
 
-                  </td>
+                    </section>
 
+                  </div>
 
-                  <td>
-                    ${reportStatusBadge(
-                      request.status
-                    )}
-                  </td>
+                  <div class="verification-card-actions">
 
+                    <button
+                      class="btn btn-success"
+                      type="button"
+                      onclick="approveVerification('${requestId}')"
+                    >
+                      <i class="fa-solid fa-check"></i>
+                      Approve & Verify
+                    </button>
 
-                  <td>
-                    <div class="verification-date">
-                      <i class="fa-regular fa-calendar"></i>
-                      ${formatDate(submittedValue)}
-                    </div>
-                  </td>
+                    <button
+                      class="btn btn-danger"
+                      type="button"
+                      onclick="rejectVerification('${requestId}')"
+                    >
+                      <i class="fa-solid fa-xmark"></i>
+                      Reject
+                    </button>
 
+                  </div>
 
-                  <td>
-
-                    <div class="actions">
-
-                      <button
-                        class="btn btn-success btn-sm"
-                        onclick="approveVerification('${encodeURIComponent(
-                          request.id
-                        )}')"
-                      >
-                        <i class="fa-solid fa-check"></i>
-                        Approve
-                      </button>
-
-
-                      <button
-                        class="btn btn-danger btn-sm"
-                        onclick="rejectVerification('${encodeURIComponent(
-                          request.id
-                        )}')"
-                      >
-                        <i class="fa-solid fa-xmark"></i>
-                        Reject
-                      </button>
-
-                    </div>
-
-                  </td>
-
-                </tr>
+                </article>
               `;
-
             }
           )
           .join("");
 
+      scheduleVerificationVideoPrefetch();
     }
 
 
+    /* ==========================================================
+       VERIFICATION VIDEO PREFETCH QUEUE
+       - Loads videos automatically ONE BY ONE.
+       - Never calls play().
+       - User must press the native Play button.
+    =========================================================== */
+
+    let verificationVideoQueueToken = 0;
+
+    function scheduleVerificationVideoPrefetch() {
+      const token = ++verificationVideoQueueToken;
+      const videos = Array.from(
+        document.querySelectorAll(
+          '#verificationTable video[data-video-src]'
+        )
+      );
+
+      if (!videos.length) return;
+
+      const loadNext = (index) => {
+        if (token !== verificationVideoQueueToken) return;
+        if (index >= videos.length) return;
+
+        const video = videos[index];
+        if (!video) {
+          loadNext(index + 1);
+          return;
+        }
+
+        const encodedId =
+          video.id.replace('verification-video-', '');
+
+        const start = () => {
+          if (token !== verificationVideoQueueToken) return;
+
+          const src = video.dataset.videoSrc;
+          if (!src || video.dataset.sourceLoaded === '1') {
+            loadNext(index + 1);
+            return;
+          }
+
+          video.dataset.sourceLoaded = '1';
+          video.preload = 'auto';
+          video.src = src;
+          video.load();
+
+          let advanced = false;
+          const advance = () => {
+            if (advanced) return;
+            advanced = true;
+            video.classList.add('is-ready');
+            loadNext(index + 1);
+          };
+
+          video.addEventListener('canplay', advance, { once: true });
+          video.addEventListener('loadedmetadata', () => {
+            video.classList.add('is-ready');
+          }, { once: true });
+          video.addEventListener('error', () => {
+            advance();
+          }, { once: true });
+
+          /* Safety fallback: if a browser does not emit canplay quickly,
+             allow the next queued video to begin after metadata loads. */
+          setTimeout(() => {
+            if (!advanced && video.readyState >= 1) {
+              advance();
+            }
+          }, 5000);
+        };
+
+        /* Give the browser a frame before starting each next request. */
+        requestAnimationFrame(start);
+      };
+
+      loadNext(0);
+    }
+
+    window.handleVerificationVideoLoaded = function(encodedId) {
+      const id = decodeURIComponent(encodedId);
+      const video = $('verification-video-' + id);
+      const errorBox = $('verification-video-error-' + id);
+      if (video) video.classList.add('is-ready');
+      if (errorBox) errorBox.style.display = 'none';
+    };
+
+    window.handleVerificationVideoReady = function(encodedId) {
+      const id = decodeURIComponent(encodedId);
+      const video = $('verification-video-' + id);
+      const errorBox = $('verification-video-error-' + id);
+      if (video) video.classList.add('is-ready');
+      if (errorBox) errorBox.style.display = 'none';
+    };
+
+    window.ensureVerificationVideoSource = function(encodedId) {
+      const id = decodeURIComponent(encodedId);
+      const video = $('verification-video-' + id);
+      if (!video) return;
+
+      const src = video.dataset.videoSrc;
+      if (!src) return;
+
+      if (video.dataset.sourceLoaded !== '1') {
+        video.dataset.sourceLoaded = '1';
+        video.preload = 'auto';
+        video.src = src;
+        video.load();
+      }
+    };
+
     window.showVerificationVideoError = function(encodedId) {
       const id = decodeURIComponent(encodedId);
-      const errorBox = $("verification-video-error-" + id);
-      if (errorBox) errorBox.style.display = "block";
+      const errorBox = $('verification-video-error-' + id);
+      if (errorBox) errorBox.style.display = 'block';
     };
 
     window.retryVerificationVideo = function(encodedId) {
       const id = decodeURIComponent(encodedId);
-      const video = $("verification-video-" + id);
-      const errorBox = $("verification-video-error-" + id);
+      const video = $('verification-video-' + id);
+      const errorBox = $('verification-video-error-' + id);
       if (!video) return;
-      if (errorBox) errorBox.style.display = "none";
+
+      if (errorBox) errorBox.style.display = 'none';
+
+      const src = video.dataset.videoSrc;
+      if (!src) return;
+
       try {
         video.pause();
+        video.removeAttribute('src');
         video.load();
-        const playPromise = video.play();
-        if (playPromise && typeof playPromise.catch === "function") {
-          playPromise.catch(() => {});
-        }
-      } catch (_) {}
+        video.dataset.sourceLoaded = '0';
+        video.classList.remove('is-ready');
+
+        video.preload = 'auto';
+        video.src = src;
+        video.dataset.sourceLoaded = '1';
+        video.load();
+      } catch (error) {
+        console.error('retryVerificationVideo:', error);
+      }
     };
 
     window.openVerificationVideo = function(encodedUrl) {
       const url = decodeURIComponent(encodedUrl);
-      window.open(url, "_blank", "noopener,noreferrer");
+      window.open(url, '_blank', 'noopener,noreferrer');
     };
-
 
     window.approveVerification =
       function(encodedId) {
