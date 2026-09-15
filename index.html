@@ -3166,37 +3166,49 @@
 
     function toDate(value) {
 
-      if (!value) {
+      if (!value) return null;
+
+      if (value instanceof Date) {
+        return Number.isNaN(value.getTime()) ? null : value;
+      }
+
+      if (typeof value?.toDate === "function") {
+        const date = value.toDate();
+        return date instanceof Date && !Number.isNaN(date.getTime())
+          ? date
+          : null;
+      }
+
+      // Firestore Timestamp after JSON/localStorage serialization.
+      if (typeof value === "object") {
+        const seconds = value.seconds ?? value._seconds ?? null;
+        if (seconds !== null && seconds !== undefined) {
+          const nanos = Number(value.nanoseconds ?? value._nanoseconds ?? 0) || 0;
+          const date = new Date(Number(seconds) * 1000 + Math.floor(nanos / 1000000));
+          return Number.isNaN(date.getTime()) ? null : date;
+        }
         return null;
       }
 
-      if (
-        typeof value?.toDate === "function"
-      ) {
-        return value.toDate();
+      if (typeof value === "number") {
+        const millis = value < 100000000000 ? value * 1000 : value;
+        const date = new Date(millis);
+        return Number.isNaN(date.getTime()) ? null : date;
       }
 
-      if (
-        value instanceof Date
-      ) {
-        return value;
-      }
+      if (typeof value === "string") {
+        const trimmed = value.trim();
+        if (!trimmed) return null;
 
-      if (
-        typeof value === "number"
-      ) {
-        return new Date(value);
-      }
-
-      if (
-        typeof value === "string"
-      ) {
-        const d =
-          new Date(value);
-
-        if (!Number.isNaN(d.getTime())) {
-          return d;
+        const numeric = Number(trimmed);
+        if (Number.isFinite(numeric)) {
+          const millis = numeric < 100000000000 ? numeric * 1000 : numeric;
+          const numericDate = new Date(millis);
+          if (!Number.isNaN(numericDate.getTime())) return numericDate;
         }
+
+        const parsed = new Date(trimmed);
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
       }
 
       return null;
@@ -4228,9 +4240,6 @@
 
                   <td>
                     ${userCellHtml(user)}
-                    <div style="margin-top:6px;color:#64748b;font-size:10px;">
-                      Submitted: ${formatDate(submittedValue)}
-                    </div>
                   </td>
 
                   <td>
@@ -7097,244 +7106,158 @@
     function renderCharts() {
 
       const labels = [];
+      const growthData = [];
 
-      const userData = [];
+      const registrationDates = allUsers
+        .map((user) =>
+          toDate(
+            user.createdAt ??
+            user.created_at ??
+            user.joinedAt ??
+            user.registrationDate ??
+            user.timestamp
+          )
+        )
+        .filter(Boolean)
+        .sort((a, b) => a.getTime() - b.getTime());
 
-      const matchData = [];
+      const windowStart = new Date();
+      windowStart.setHours(0, 0, 0, 0);
+      windowStart.setDate(windowStart.getDate() - 29);
 
+      let cumulative = registrationDates.filter(
+        (date) => date < windowStart
+      ).length;
 
-      for (
-        let i = 29;
-        i >= 0;
-        i--
-      ) {
+      for (let i = 0; i < 30; i++) {
+        const date = new Date(windowStart);
+        date.setDate(windowStart.getDate() + i);
 
-        const date =
-          new Date();
+        const nextDay = new Date(date);
+        nextDay.setDate(date.getDate() + 1);
 
-        date.setDate(
-          date.getDate() - i
-        );
+        const addedToday = registrationDates.filter(
+          (created) => created >= date && created < nextDay
+        ).length;
 
+        cumulative += addedToday;
 
         labels.push(
-          date.toLocaleDateString(
-            undefined,
-            {
-              month: "short",
-              day: "numeric"
-            }
-          )
+          date.toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric"
+          })
         );
 
-
-        const endDate =
-          new Date(date);
-
-        endDate.setHours(
-          23,
-          59,
-          59,
-          999
-        );
-
-
-        const startDate =
-          new Date(date);
-
-        startDate.setHours(
-          0,
-          0,
-          0,
-          0
-        );
-
-
-        const usersCount =
-          allUsers.filter(
-            (user) => {
-
-              const created =
-                toDate(
-                  user.createdAt
-                );
-
-              return (
-                created &&
-                created >= startDate &&
-                created <= endDate
-              );
-
-            }
-          ).length;
-
-
-        userData.push(
-          usersCount
-        );
-
-
-        matchData.push(0);
-
+        growthData.push(cumulative);
       }
 
+      // If the user documents do not contain a usable registration date,
+      // still show the known total at the latest point instead of an empty
+      // chart.
+      if (!registrationDates.length && allUsers.length) {
+        growthData.fill(0);
+        growthData[growthData.length - 1] = allUsers.length;
+      }
 
       if (userGrowthChart) {
         userGrowthChart.destroy();
+        userGrowthChart = null;
       }
-
 
       if (matchesChart) {
         matchesChart.destroy();
+        matchesChart = null;
       }
 
+      const userCanvas = $("userGrowthChart");
+      const matchesCanvas = $("matchesChart");
 
-      const userCtx =
-        $("userGrowthChart")
-          .getContext("2d");
+      if (!userCanvas || !matchesCanvas || typeof Chart === "undefined") {
+        return;
+      }
 
+      const userCtx = userCanvas.getContext("2d");
 
-      userGrowthChart =
-        new Chart(
-          userCtx,
-          {
-            type: "line",
-
-            data: {
-              labels,
-
-              datasets: [
-                {
-                  label:
-                    "New Users",
-
-                  data:
-                    userData,
-
-                  tension: 0.35,
-
-                  borderWidth: 2,
-
-                  fill: true,
-
-                  backgroundColor:
-                    "rgba(255,13,27,0.08)",
-
-                  borderColor:
-                    "#ff0d1b",
-
-                  pointRadius: 2
-
-                }
-              ]
-            },
-
-            options: {
-
-              responsive: true,
-
-              maintainAspectRatio: false,
-
-              plugins: {
-                legend: {
-                  display: false
-                }
-              },
-
-              scales: {
-
-                y: {
-                  beginAtZero: true,
-                  ticks: {
-                    precision: 0
-                  }
-                },
-
-                x: {
-                  grid: {
-                    display: false
-                  }
-                }
-
+      userGrowthChart = new Chart(userCtx, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [{
+            label: "Total Users",
+            data: growthData,
+            tension: 0.35,
+            borderWidth: 2,
+            fill: true,
+            backgroundColor: "rgba(255,13,27,0.08)",
+            borderColor: "#ff0d1b",
+            pointRadius: 2,
+            pointHoverRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            intersect: false,
+            mode: "index"
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (context) =>
+                  ` ${Number(context.parsed.y || 0).toLocaleString()} users`
               }
-
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                precision: 0,
+                callback: (value) => Number(value).toLocaleString()
+              }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { maxTicksLimit: 10 }
             }
           }
-        );
+        }
+      });
 
+      const matchCtx = matchesCanvas.getContext("2d");
+      const matchData = labels.map(() => 0);
 
-      const matchCtx =
-        $("matchesChart")
-          .getContext("2d");
-
-
-      matchesChart =
-        new Chart(
-          matchCtx,
-          {
-            type: "line",
-
-            data: {
-              labels,
-
-              datasets: [
-                {
-                  label:
-                    "Matches",
-
-                  data:
-                    matchData,
-
-                  tension: 0.35,
-
-                  borderWidth: 2,
-
-                  fill: true,
-
-                  backgroundColor:
-                    "rgba(78,205,196,0.08)",
-
-                  borderColor:
-                    "#4ecdc4",
-
-                  pointRadius: 2
-
-                }
-              ]
-            },
-
-            options: {
-
-              responsive: true,
-
-              maintainAspectRatio: false,
-
-              plugins: {
-                legend: {
-                  display: false
-                }
-              },
-
-              scales: {
-
-                y: {
-                  beginAtZero: true,
-                  ticks: {
-                    precision: 0
-                  }
-                },
-
-                x: {
-                  grid: {
-                    display: false
-                  }
-                }
-
-              }
-
+      matchesChart = new Chart(matchCtx, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [{
+            label: "Matches",
+            data: matchData,
+            tension: 0.35,
+            borderWidth: 2,
+            fill: true,
+            backgroundColor: "rgba(78,205,196,0.08)",
+            borderColor: "#4ecdc4",
+            pointRadius: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, ticks: { precision: 0 } },
+            x: {
+              grid: { display: false },
+              ticks: { maxTicksLimit: 10 }
             }
           }
-        );
+        }
+      });
 
     }
 
