@@ -1691,6 +1691,179 @@
         bottom: max(18px, env(safe-area-inset-bottom));
       }
     }
+
+    /* =========================================================
+       SIGNUP RECOVERY
+    ========================================================== */
+
+    .recovery-card {
+      border: 1px solid #dbeafe;
+      background:
+        linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+    }
+
+    .recovery-alert {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px 15px;
+      border-radius: 14px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e3a8a;
+      margin-bottom: 18px;
+    }
+
+    .recovery-alert i {
+      margin-top: 2px;
+      font-size: 16px;
+      flex: 0 0 auto;
+    }
+
+    .recovery-alert strong {
+      display: block;
+      font-size: 12px;
+      margin-bottom: 3px;
+    }
+
+    .recovery-alert span {
+      display: block;
+      font-size: 11px;
+      line-height: 1.55;
+    }
+
+    .recovery-controls {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .recovery-control {
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      padding: 12px;
+      background: #ffffff;
+    }
+
+    .recovery-control.full {
+      grid-column: 1 / -1;
+    }
+
+    .recovery-control-title {
+      font-size: 11px;
+      font-weight: 800;
+      color: #374151;
+      margin-bottom: 7px;
+    }
+
+    .recovery-checkboxes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+    }
+
+    .recovery-check {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fafafa;
+      font-size: 11px;
+      color: #374151;
+      user-select: none;
+    }
+
+    .recovery-check input {
+      accent-color: var(--primary);
+    }
+
+    .recovery-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 15px;
+    }
+
+    .recovery-result {
+      margin-top: 16px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: #ffffff;
+      padding: 14px;
+      display: none;
+    }
+
+    .recovery-result.show {
+      display: block;
+    }
+
+    .recovery-result-title {
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .recovery-result-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .recovery-stat {
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      padding: 10px;
+      background: #fafafa;
+    }
+
+    .recovery-stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .recovery-stat strong {
+      display: block;
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .recovery-sample {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.55;
+    }
+
+    .recovery-target-note {
+      margin-top: 11px;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.55;
+    }
+
+    @media (max-width: 700px) {
+      .recovery-controls {
+        grid-template-columns: 1fr;
+      }
+
+      .recovery-control.full {
+        grid-column: auto;
+      }
+
+      .recovery-result-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
   </style>
 </head>
 
@@ -2456,7 +2629,7 @@
                 <div>
                   <h3>Create Announcement</h3>
                   <span>
-                    Announcement is saved in the admin cache.
+                    Save a local admin announcement draft/history.
                   </span>
                 </div>
               </div>
@@ -2526,6 +2699,189 @@
                   <i class="fa-solid fa-paper-plane"></i>
                   Save Announcement
                 </button>
+
+              </div>
+
+            </div>
+
+
+
+            <!-- ===================================================
+                 SIGNUP RECOVERY
+            ==================================================== -->
+
+            <div
+              class="card recovery-card"
+              style="margin-top:18px;"
+            >
+
+              <div class="card-header">
+
+                <div>
+                  <h3>
+                    Signup Recovery
+                  </h3>
+
+                  <span>
+                    Reach users whose Masoya account exists but profile photo is still missing.
+                  </span>
+                </div>
+
+              </div>
+
+              <div class="card-body">
+
+                <div class="recovery-alert">
+                  <i class="fa-solid fa-shield-heart"></i>
+
+                  <div>
+                    <strong>
+                      Safe recovery workflow
+                    </strong>
+
+                    <span>
+                      This tool targets photo-missing accounts only.
+                      It does not change verification attempts or profile-photo limits.
+                      Preview is safe; sending requires explicit confirmation.
+                    </span>
+                  </div>
+                </div>
+
+                <div class="recovery-controls">
+
+                  <div class="recovery-control">
+                    <div class="recovery-control-title">
+                      Accounts created after
+                    </div>
+
+                    <input
+                      id="recoveryCreatedAfter"
+                      class="input"
+                      type="datetime-local"
+                    />
+
+                    <div class="recovery-target-note">
+                      Set this to the date the signup problem started.
+                      Leave empty only when you intentionally want to target all
+                      incomplete photo profiles.
+                    </div>
+                  </div>
+
+                  <div class="recovery-control">
+                    <div class="recovery-control-title">
+                      Accounts created before
+                    </div>
+
+                    <input
+                      id="recoveryCreatedBefore"
+                      class="input"
+                      type="datetime-local"
+                    />
+
+                    <div class="recovery-target-note">
+                      Optional. Leave empty to include all accounts after the start date.
+                    </div>
+                  </div>
+
+                  <div class="recovery-control full">
+                    <div class="recovery-control-title">
+                      Delivery channels
+                    </div>
+
+                    <div class="recovery-checkboxes">
+
+                      <label class="recovery-check">
+                        <input
+                          id="recoverySendPush"
+                          type="checkbox"
+                          checked
+                        />
+                        <span>Push notification</span>
+                      </label>
+
+                      <label class="recovery-check">
+                        <input
+                          id="recoverySendEmail"
+                          type="checkbox"
+                          checked
+                        />
+                        <span>Email</span>
+                      </label>
+
+                      <label class="recovery-check">
+                        <input
+                          id="recoveryForceResend"
+                          type="checkbox"
+                        />
+                        <span>Force resend</span>
+                      </label>
+
+                    </div>
+                  </div>
+
+                </div>
+
+                <div class="recovery-actions">
+
+                  <button
+                    id="previewRecoveryButton"
+                    class="btn btn-info"
+                    type="button"
+                  >
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    Preview Affected Users
+                  </button>
+
+                  <button
+                    id="sendRecoveryButton"
+                    class="btn btn-success"
+                    type="button"
+                  >
+                    <i class="fa-solid fa-paper-plane"></i>
+                    Send Recovery Message
+                  </button>
+
+                </div>
+
+                <div
+                  id="recoveryResult"
+                  class="recovery-result"
+                >
+
+                  <div class="recovery-result-title">
+                    Recovery Result
+                  </div>
+
+                  <div class="recovery-result-grid">
+
+                    <div class="recovery-stat">
+                      <span>Targets</span>
+                      <strong id="recoveryTargetCount">0</strong>
+                    </div>
+
+                    <div class="recovery-stat">
+                      <span>Push Sent</span>
+                      <strong id="recoveryPushSent">0</strong>
+                    </div>
+
+                    <div class="recovery-stat">
+                      <span>Email Sent</span>
+                      <strong id="recoveryEmailSent">0</strong>
+                    </div>
+
+                    <div class="recovery-stat">
+                      <span>Failures</span>
+                      <strong id="recoveryFailures">0</strong>
+                    </div>
+
+                  </div>
+
+                  <div
+                    id="recoveryResultDetails"
+                    class="recovery-sample"
+                  ></div>
+
+                </div>
 
               </div>
 
@@ -7050,6 +7406,438 @@
         }
       );
 
+
+
+    /* ==========================================================
+       SIGNUP RECOVERY
+    =========================================================== */
+
+    const SIGNUP_RECOVERY_FUNCTION_URL =
+      `https://us-central1-${firebaseConfig.projectId}.cloudfunctions.net/sendSignupRecovery`;
+
+    function getRecoveryDateValue(id) {
+      const input = $(id);
+
+      if (!input || !input.value) {
+        return null;
+      }
+
+      const date = new Date(input.value);
+
+      if (Number.isNaN(date.getTime())) {
+        return null;
+      }
+
+      return date.toISOString();
+    }
+
+    function setRecoveryLoading(button, loading, label) {
+      if (!button) return;
+
+      button.disabled = loading;
+
+      button.innerHTML = loading
+        ? `
+          <i class="fa-solid fa-spinner fa-spin"></i>
+          ${label}
+        `
+        : button.dataset.originalHtml;
+    }
+
+    function setRecoveryResult(summary, mode = "send") {
+      const box = $("recoveryResult");
+      if (!box || !summary) return;
+
+      box.classList.add("show");
+
+      $("recoveryTargetCount").textContent =
+        Number(summary.targetCount || 0).toLocaleString();
+
+      $("recoveryPushSent").textContent =
+        Number(summary.pushSent || 0).toLocaleString();
+
+      $("recoveryEmailSent").textContent =
+        Number(summary.emailSent || 0).toLocaleString();
+
+      const failures =
+        Number(summary.pushFailed || 0) +
+        Number(summary.emailFailed || 0) +
+        Number((summary.errors || []).length);
+
+      $("recoveryFailures").textContent =
+        failures.toLocaleString();
+
+      const sample =
+        Array.isArray(summary.sample)
+          ? summary.sample
+          : [];
+
+      const sampleText =
+        sample.length
+          ? sample
+              .slice(0, 10)
+              .map((item) => {
+                const name =
+                  item.fullName || "Unknown";
+                const email =
+                  item.email || "No email";
+                return `${escapeHtml(name)} — ${escapeHtml(email)}`;
+              })
+              .join("<br>")
+          : "No sample users were returned.";
+
+      const modeText =
+        mode === "preview"
+          ? `Preview complete. ${Number(summary.targetCount || 0).toLocaleString()} photo-missing account(s) match the selected date range. Nothing was sent.`
+          : `Send complete. Push: ${Number(summary.pushSent || 0).toLocaleString()} • Email: ${Number(summary.emailSent || 0).toLocaleString()}.`;
+
+      $("recoveryResultDetails").innerHTML =
+        `<strong>${escapeHtml(modeText)}</strong><br><br>${sampleText}`;
+    }
+
+    async function callSignupRecovery({
+      dryRun,
+      confirm = "",
+    }) {
+      if (!currentUser) {
+        throw new Error("Admin session is not available.");
+      }
+
+      const idToken =
+        await currentUser.getIdToken(true);
+
+      const payload = {
+        dryRun,
+        confirm,
+        forceResend:
+          $("recoveryForceResend").checked,
+        sendPush:
+          $("recoverySendPush").checked,
+        sendEmail:
+          $("recoverySendEmail").checked,
+        createdAfter:
+          getRecoveryDateValue(
+            "recoveryCreatedAfter"
+          ),
+        createdBefore:
+          getRecoveryDateValue(
+            "recoveryCreatedBefore"
+          ),
+      };
+
+      const response =
+        await fetch(
+          SIGNUP_RECOVERY_FUNCTION_URL,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json",
+              "Authorization":
+                `Bearer ${idToken}`,
+            },
+            body:
+              JSON.stringify(payload),
+          }
+        );
+
+      let data = null;
+
+      try {
+        data = await response.json();
+      } catch (_) {
+        data = null;
+      }
+
+      if (!response.ok || !data) {
+        throw new Error(
+          data?.message ||
+          `Recovery request failed (${response.status}).`
+        );
+      }
+
+      if (data.status !== "success") {
+        throw new Error(
+          data.message ||
+          "Recovery request failed."
+        );
+      }
+
+      return data;
+    }
+
+
+    // Default recovery window: the last 14 days.
+    // The admin can change or clear this before previewing.
+    (() => {
+      const afterInput =
+        $("recoveryCreatedAfter");
+
+      const beforeInput =
+        $("recoveryCreatedBefore");
+
+      const now =
+        new Date();
+
+      const fourteenDaysAgo =
+        new Date(
+          now.getTime() -
+          (14 * 24 * 60 * 60 * 1000)
+        );
+
+      const toLocalInputValue =
+        (date) => {
+          const pad =
+            (n) => String(n).padStart(2, "0");
+
+          return `${date.getFullYear()}-${pad(
+            date.getMonth() + 1
+          )}-${pad(date.getDate())}T${pad(
+            date.getHours()
+          )}:${pad(date.getMinutes())}`;
+        };
+
+      if (afterInput && !afterInput.value) {
+        afterInput.value =
+          toLocalInputValue(
+            fourteenDaysAgo
+          );
+      }
+
+      if (beforeInput && !beforeInput.value) {
+        beforeInput.value =
+          toLocalInputValue(now);
+      }
+    })();
+
+    const previewRecoveryButton =
+      $("previewRecoveryButton");
+
+    const sendRecoveryButton =
+      $("sendRecoveryButton");
+
+    if (previewRecoveryButton) {
+      previewRecoveryButton.dataset.originalHtml =
+        previewRecoveryButton.innerHTML;
+
+      previewRecoveryButton.addEventListener(
+        "click",
+        async () => {
+          if (
+            !$("recoverySendPush").checked &&
+            !$("recoverySendEmail").checked
+          ) {
+            showToast(
+              "Select at least one delivery channel.",
+              "warning"
+            );
+            return;
+          }
+
+          previewRecoveryButton.disabled = true;
+          previewRecoveryButton.innerHTML = `
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            Checking targets...
+          `;
+
+          try {
+            const summary =
+              await callSignupRecovery({
+                dryRun: true,
+              });
+
+            setRecoveryResult(
+              summary,
+              "preview"
+            );
+
+            showToast(
+              `Preview complete: ${Number(summary.targetCount || 0).toLocaleString()} target(s).`
+            );
+          } catch (error) {
+            console.error(
+              "Signup recovery preview:",
+              error
+            );
+
+            showToast(
+              error.message ||
+                "Could not preview signup recovery.",
+              "error"
+            );
+          } finally {
+            previewRecoveryButton.disabled =
+              false;
+
+            previewRecoveryButton.innerHTML =
+              previewRecoveryButton.dataset.originalHtml;
+          }
+        }
+      );
+    }
+
+    if (sendRecoveryButton) {
+      sendRecoveryButton.dataset.originalHtml =
+        sendRecoveryButton.innerHTML;
+
+      sendRecoveryButton.addEventListener(
+        "click",
+        async () => {
+          if (
+            !$("recoverySendPush").checked &&
+            !$("recoverySendEmail").checked
+          ) {
+            showToast(
+              "Select at least one delivery channel.",
+              "warning"
+            );
+            return;
+          }
+
+          const after =
+            getRecoveryDateValue(
+              "recoveryCreatedAfter"
+            );
+
+          const before =
+            getRecoveryDateValue(
+              "recoveryCreatedBefore"
+            );
+
+          if (
+            after &&
+            before &&
+            new Date(after) > new Date(before)
+          ) {
+            showToast(
+              "The start date must be before the end date.",
+              "warning"
+            );
+            return;
+          }
+
+          const firstConfirm =
+            window.confirm(
+              "This will send a recovery message only to accounts that currently have no profile photo. Continue?"
+            );
+
+          if (!firstConfirm) {
+            return;
+          }
+
+          sendRecoveryButton.disabled = true;
+          sendRecoveryButton.innerHTML = `
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            Preparing recovery...
+          `;
+
+          try {
+            // Always preview immediately before sending so the admin sees the
+            // current target count and is protected from an accidental broad send.
+            const preview =
+              await callSignupRecovery({
+                dryRun: true,
+              });
+
+            setRecoveryResult(
+              preview,
+              "preview"
+            );
+
+            if (
+              Number(preview.targetCount || 0) === 0
+            ) {
+              showToast(
+                "No matching incomplete photo profiles were found.",
+                "warning"
+              );
+              return;
+            }
+
+            const secondConfirm =
+              window.confirm(
+                `Send to ${Number(preview.targetCount).toLocaleString()} affected account(s) now?\n\nPush: ${$("recoverySendPush").checked ? "ON" : "OFF"}\nEmail: ${$("recoverySendEmail").checked ? "ON" : "OFF"}`
+              );
+
+            if (!secondConfirm) {
+              return;
+            }
+
+            sendRecoveryButton.innerHTML = `
+              <i class="fa-solid fa-spinner fa-spin"></i>
+              Sending messages...
+            `;
+
+            const summary =
+              await callSignupRecovery({
+                dryRun: false,
+                confirm: "SEND",
+              });
+
+            setRecoveryResult(
+              summary,
+              "send"
+            );
+
+            const totalFailures =
+              Number(summary.pushFailed || 0) +
+              Number(summary.emailFailed || 0) +
+              Number((summary.errors || []).length);
+
+            if (totalFailures > 0) {
+              showToast(
+                `Recovery sent with ${totalFailures.toLocaleString()} reported failure(s).`,
+                "warning"
+              );
+            } else {
+              showToast(
+                `Recovery completed successfully for ${Number(summary.targetCount || 0).toLocaleString()} target(s).`
+              );
+            }
+
+            // Keep a local admin record as an audit/history entry.
+            const announcements =
+              getAnnouncements();
+
+            announcements.push({
+              title:
+                "Signup Recovery Sent",
+              message:
+                `Recovery notification sent to ${Number(summary.targetCount || 0).toLocaleString()} photo-missing account(s). Push: ${Number(summary.pushSent || 0).toLocaleString()}, Email: ${Number(summary.emailSent || 0).toLocaleString()}.`,
+              audience:
+                "Signup Recovery",
+              createdAt:
+                new Date().toISOString(),
+              createdBy:
+                currentUser.uid
+            });
+
+            saveAnnouncements(
+              announcements
+            );
+
+            renderAnnouncements();
+          } catch (error) {
+            console.error(
+              "Signup recovery send:",
+              error
+            );
+
+            showToast(
+              error.message ||
+                "Could not send signup recovery messages.",
+              "error"
+            );
+          } finally {
+            sendRecoveryButton.disabled =
+              false;
+
+            sendRecoveryButton.innerHTML =
+              sendRecoveryButton.dataset.originalHtml;
+          }
+        }
+      );
+    }
 
     /* ==========================================================
        DASHBOARD
