@@ -3353,6 +3353,7 @@
       doc,
       getDoc,
       getDocs,
+      onSnapshot,
       updateDoc,
       deleteDoc,
       setDoc,
@@ -4147,6 +4148,11 @@
 
           currentUser = null;
 
+          if (verificationRequestsUnsubscribe) {
+            verificationRequestsUnsubscribe();
+            verificationRequestsUnsubscribe = null;
+          }
+
           $("app").style.display =
             "none";
 
@@ -4216,6 +4222,9 @@
 
       await refreshDashboard();
       renderCharts();
+
+      // Keep the verification queue live while the admin panel is open.
+      startVerificationRequestsRealtime();
     }
 
 
@@ -6296,6 +6305,42 @@
     /* ==========================================================
        VERIFICATION REQUESTS
     =========================================================== */
+
+    let verificationRequestsUnsubscribe = null;
+
+    function startVerificationRequestsRealtime() {
+      if (verificationRequestsUnsubscribe) {
+        return;
+      }
+
+      verificationRequestsUnsubscribe = onSnapshot(
+        collection(
+          db,
+          "verification_requests"
+        ),
+        (snapshot) => {
+          verificationRequests = snapshot.docs.map((docSnapshot) => ({
+            id: docSnapshot.id,
+            ...docSnapshot.data()
+          }));
+
+          writeCache(
+            "verification",
+            verificationRequests.slice(0, 1000)
+          );
+
+          renderVerificationTable();
+          scheduleVerificationVideoPrefetch();
+        },
+        (error) => {
+          console.error(
+            "Verification realtime listener:",
+            error
+          );
+        }
+      );
+    }
+
 
     async function loadVerificationRequests({ silent = false } = {}) {
 
