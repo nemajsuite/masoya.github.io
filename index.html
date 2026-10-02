@@ -2980,7 +2980,7 @@
                   <h3>Verification Requests</h3>
 
                   <span id="verificationCount">
-                    0 pending
+                    — pending
                   </span>
                 </div>
 
@@ -3369,6 +3369,7 @@
       doc,
       getDoc,
       getDocs,
+      getCountFromServer,
       onSnapshot,
       updateDoc,
       writeBatch,
@@ -3446,6 +3447,10 @@
     let verificationRequests = [];
 
     let verificationHasRendered = false;
+
+    // Exact total pending count. This is intentionally NOT realtime.
+    // It is refreshed only on a full admin load or an explicit Refresh.
+    let verificationTotalPending = null;
 
     const verificationActionInFlight = new Set();
 
@@ -4245,6 +4250,7 @@
         loadUsers({ silent: hasUsers }),
         loadReports({ silent: hasReports }),
         loadVerificationRequests({ silent: hasVerification }),
+        loadTotalPendingVerificationCount(),
         loadAppConfig({ silent: hasConfig }),
         loadAnnouncements()
       ]);
@@ -6613,11 +6619,55 @@
         ).length;
 
       const label =
-        loadedPending >= VERIFICATION_QUERY_LIMIT
-          ? `${VERIFICATION_QUERY_LIMIT}+ pending`
-          : `${loadedPending} pending`;
+        Number.isFinite(verificationTotalPending)
+          ? `${verificationTotalPending} pending`
+          : loadedPending >= VERIFICATION_QUERY_LIMIT
+            ? `${VERIFICATION_QUERY_LIMIT}+ pending`
+            : `${loadedPending} pending`;
 
-      $("verificationCount").textContent = label;
+      const countElement = $("verificationCount");
+      if (countElement) {
+        countElement.textContent = label;
+      }
+    }
+
+
+    async function loadTotalPendingVerificationCount() {
+      try {
+        const pendingCountQuery =
+          query(
+            collection(
+              db,
+              "verification_requests"
+            ),
+            where(
+              "status",
+              "==",
+              "pending"
+            )
+          );
+
+        const countSnapshot =
+          await getCountFromServer(
+            pendingCountQuery
+          );
+
+        verificationTotalPending =
+          Number(
+            countSnapshot.data().count || 0
+          );
+
+        updateVerificationCount();
+
+      } catch (error) {
+        console.error(
+          "loadTotalPendingVerificationCount:",
+          error
+        );
+
+        // Keep the loaded-page count as a fallback.
+        updateVerificationCount();
+      }
     }
 
 
@@ -7019,7 +7069,10 @@
 
 
     async function loadVerificationRequests(
-      { silent = false } = {}
+      {
+        silent = false,
+        refreshTotal = false
+      } = {}
     ) {
 
       if (
@@ -7059,10 +7112,21 @@
             )
           );
 
-        const snapshot =
-          await getDocs(
+        const snapshotPromise =
+          getDocs(
             pendingVerificationQuery
           );
+
+        const totalPromise =
+          refreshTotal
+            ? loadTotalPendingVerificationCount()
+            : Promise.resolve();
+
+        const [snapshot] =
+          await Promise.all([
+            snapshotPromise,
+            totalPromise
+          ]);
 
         reconcileVerificationRequests(
           snapshot.docs.map(
@@ -7383,11 +7447,11 @@
         request.status || "pending";
 
       // Optimistic UI: remove ONLY this card.
+      // Do not add another card or restart video prefetch here.
+      // Keeping this operation tiny prevents other videos from stalling.
       request.status = decision;
       removeVerificationCard(id);
       updateVerificationCount();
-      fillVisibleVerificationCards();
-      renderVerificationLoadMoreFooter();
 
       try {
 
@@ -7439,31 +7503,52 @@
               item.id !== id
           );
 
-        if (
-          decision === "approved" &&
-          request.uid
-        ) {
-          updateLocalUser(
-            request.uid,
-            {
-              isVerified: true
-            }
-          );
-
-          renderUsersTable();
-          renderRecentUsers();
-        }
-
-        writeCache(
-          "verification",
-          verificationRequests.slice(0, VERIFICATION_QUERY_LIMIT)
-        );
-
+        // Important: show success BEFORE any heavier cache/table work.
+        // This lets media playback continue without waiting for admin UI
+        // maintenance to finish.
         showToast(
           decision === "approved"
             ? "Verification approved."
             : "Verification rejected."
         );
+
+        // Do non-critical work on the next event-loop turn.
+        setTimeout(() => {
+          try {
+            if (
+              decision === "approved" &&
+              request.uid
+            ) {
+              updateLocalUser(
+                request.uid,
+                {
+                  isVerified: true
+                }
+              );
+
+              // Only rebuild user-heavy views when they are actually visible.
+              if ($("page-users")?.classList.contains("active")) {
+                renderUsersTable();
+              }
+              if ($("page-dashboard")?.classList.contains("active")) {
+                renderRecentUsers();
+              }
+            }
+
+            writeCache(
+              "verification",
+              verificationRequests.slice(0, VERIFICATION_QUERY_LIMIT)
+            );
+
+            fillVisibleVerificationCards();
+            renderVerificationLoadMoreFooter();
+          } catch (maintenanceError) {
+            console.warn(
+              "Deferred verification UI maintenance failed:",
+              maintenanceError
+            );
+          }
+        }, 0);
 
       } catch (error) {
 
@@ -7500,21 +7585,30 @@
             VERIFICATION_QUERY_LIMIT
           );
 
-        fillVisibleVerificationCards();
-        renderVerificationLoadMoreFooter();
-        updateVerificationCount();
-
-        writeCache(
-          "verification",
-          verificationRequests.slice(0, VERIFICATION_QUERY_LIMIT)
-        );
-
         showToast(
           decision === "approved"
             ? "Failed to approve verification: " + (error.message || "")
             : "Failed to reject verification: " + (error.message || ""),
           "error"
         );
+
+        setTimeout(() => {
+          try {
+            fillVisibleVerificationCards();
+            renderVerificationLoadMoreFooter();
+            updateVerificationCount();
+
+            writeCache(
+              "verification",
+              verificationRequests.slice(0, VERIFICATION_QUERY_LIMIT)
+            );
+          } catch (maintenanceError) {
+            console.warn(
+              "Deferred verification restore failed:",
+              maintenanceError
+            );
+          }
+        }, 0);
 
       } finally {
         verificationActionInFlight.delete(id);
@@ -7576,7 +7670,8 @@
         "click",
         () => {
           loadVerificationRequests({
-            silent: true
+            silent: true,
+            refreshTotal: true
           });
         }
       );
