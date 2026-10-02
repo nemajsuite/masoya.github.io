@@ -1227,6 +1227,22 @@
       opacity: .35;
     }
 
+    .verification-load-more-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 8px 18px 20px;
+      color: var(--muted);
+      font-size: 11px;
+      text-align: center;
+    }
+
+    .verification-load-more-wrap .btn {
+      min-width: 150px;
+    }
+
     @media (max-width: 950px) {
       .verification-content {
         grid-template-columns: 1fr;
@@ -3433,6 +3449,14 @@
 
     const verificationActionInFlight = new Set();
 
+    const VERIFICATION_QUERY_LIMIT = 30;
+    const VERIFICATION_RENDER_LIMIT = 10;
+    const VERIFICATION_VIDEO_PREFETCH_LIMIT = 2;
+
+    let verificationVisibleLimit = VERIFICATION_RENDER_LIMIT;
+    let verificationPrefetchTimer = null;
+    let verificationVideoQueueToken = 0;
+
     let currentUserFilter = "all";
 
     let currentUserSearch = "";
@@ -4330,10 +4354,18 @@
     function hydrateVerificationCache() {
       const entry = readCache("verification");
       if (!entry || !Array.isArray(entry.data)) return false;
-      verificationRequests = entry.data;
+
+      verificationRequests = entry.data
+        .filter(
+          (request) =>
+            getVerificationStatus(request) === "pending"
+        )
+        .slice(0, VERIFICATION_QUERY_LIMIT);
+
+      verificationVisibleLimit = VERIFICATION_RENDER_LIMIT;
       renderVerificationTable();
       verificationHasRendered = true;
-      return true;
+      return verificationRequests.length > 0;
     }
 
     function hydrateAppConfigCache() {
@@ -6310,11 +6342,10 @@
 
     /* ==========================================================
        VERIFICATION REQUESTS
-       - Initial load renders the queue once.
-       - Realtime updates are applied incrementally.
-       - Approve/Reject removes ONLY the affected card.
-       - Existing video elements are never rebuilt after an action.
-       - No confirmation dialog for Approve/Reject.
+       - Only pending requests are queried from Firestore.
+       - The browser renders a small number of cards at once.
+       - Approve/Reject removes only the affected card.
+       - Realtime updates never rebuild existing video elements.
     =========================================================== */
 
     let verificationRequestsUnsubscribe = null;
@@ -6389,10 +6420,6 @@
 
     function verificationCardHtml(request) {
 
-      const uid =
-        request?.uid ||
-        request?.id;
-
       const user =
         getVerificationUser(request);
 
@@ -6406,9 +6433,7 @@
         getVerificationSubmittedValue(request);
 
       const requestId =
-        encodeURIComponent(
-          request.id
-        );
+        encodeURIComponent(request.id);
 
       const encodedVideo =
         videoUrl
@@ -6436,7 +6461,7 @@
             <div class="verification-card-meta">
               ${accountBadge(user)}
               ${verifiedBadge(user)}
-              ${reportStatusBadge(getVerificationStatus(request))}
+              <span class="badge badge-pending">Pending</span>
             </div>
 
           </div>
@@ -6456,10 +6481,10 @@
                       id="verification-video-${escapeHtml(request.id)}"
                       class="verification-video verification-video-pending"
                       controls
-                      preload="auto"
+                      preload="metadata"
                       playsinline
                       webkit-playsinline
-                      poster="${escapeHtml(profilePhoto || "")}"
+                      poster="${escapeHtml(profilePhoto || "")}" 
                       data-video-src="${escapeHtml(videoUrl)}"
                       onloadedmetadata="handleVerificationVideoLoaded('${requestId}')"
                       oncanplay="handleVerificationVideoReady('${requestId}')"
@@ -6471,7 +6496,7 @@
 
                     <div class="verification-video-status">
                       <i class="fa-solid fa-circle-info"></i>
-                      Video loads automatically in order, one at a time. Playback starts only when you press Play.
+                      The first two videos are preloaded only. Other videos load when needed. Playback starts only when you press Play.
                     </div>
 
                     <div
@@ -6581,19 +6606,34 @@
 
 
     function updateVerificationCount() {
-      const pendingCount =
+      const loadedPending =
         verificationRequests.filter(
           (request) =>
             getVerificationStatus(request) === "pending"
         ).length;
 
-      $("verificationCount").textContent =
-        `${pendingCount} pending`;
+      const label =
+        loadedPending >= VERIFICATION_QUERY_LIMIT
+          ? `${VERIFICATION_QUERY_LIMIT}+ pending`
+          : `${loadedPending} pending`;
+
+      $("verificationCount").textContent = label;
     }
 
 
     function showVerificationEmptyState() {
-      $("verificationTable").innerHTML = `
+      const table = $("verificationTable");
+      if (!table) return;
+
+      if (
+        table.querySelector(
+          ".verification-card"
+        )
+      ) {
+        return;
+      }
+
+      table.innerHTML = `
         <div class="verification-empty">
           <i class="fa-solid fa-circle-check"></i>
           <div>No pending verification requests.</div>
@@ -6606,28 +6646,21 @@
       const card =
         $("verification-card-" + id);
 
-      if (!card) return false;
-
-      const videos =
-        card.querySelectorAll("video");
-
-      videos.forEach((video) => {
-        try {
-          video.pause();
-          video.removeAttribute("src");
-          video.load();
-        } catch (_) {}
-      });
-
-      card.remove();
-
-      if (!document.querySelector(
-        "#verificationTable .verification-card"
-      )) {
-        showVerificationEmptyState();
+      if (!card) {
+        return false;
       }
 
-      updateVerificationCount();
+      card
+        .querySelectorAll("video")
+        .forEach((video) => {
+          try {
+            video.pause();
+            video.removeAttribute("src");
+            video.removeAttribute("poster");
+          } catch (_) {}
+        });
+
+      card.remove();
       return true;
     }
 
@@ -6638,20 +6671,16 @@
         !request ||
         getVerificationStatus(request) !== "pending"
       ) {
-        return;
+        return false;
       }
 
-      const table =
-        $("verificationTable");
-
-      if (!table) return;
+      const table = $("verificationTable");
+      if (!table) return false;
 
       if (
-        table.querySelector(
-          "#verification-card-" + request.id
-        )
+        $("verification-card-" + request.id)
       ) {
-        return;
+        return false;
       }
 
       const emptyState =
@@ -6663,28 +6692,38 @@
         table.innerHTML = "";
       }
 
-      table.insertAdjacentHTML(
-        "beforeend",
-        verificationCardHtml(request)
-      );
+      const footer =
+        table.querySelector(
+          ".verification-load-more-wrap"
+        );
 
-      updateVerificationCount();
+      if (footer) {
+        footer.insertAdjacentHTML(
+          "beforebegin",
+          verificationCardHtml(request)
+        );
+      } else {
+        table.insertAdjacentHTML(
+          "beforeend",
+          verificationCardHtml(request)
+        );
+      }
+
+      return true;
     }
 
 
     function refreshVerificationCardDetails(request) {
-
       const card =
         $("verification-card-" + request.id);
 
-      if (!card) return;
+      if (!card) return false;
+
+      const video =
+        card.querySelector("video");
 
       const oldVideoUrl =
-        card
-          .querySelector("video")
-          ?.dataset
-          ?.videoSrc ||
-        "";
+        video?.dataset?.videoSrc || "";
 
       const newVideoUrl =
         getVerificationVideoUrl(request);
@@ -6692,27 +6731,17 @@
       const oldPhoto =
         card
           .querySelector(".verification-photo")
-          ?.getAttribute("src") ||
-        "";
+          ?.getAttribute("src") || "";
 
       const newPhoto =
         getVerificationProfilePhoto(request);
 
-      /*
-       * If the media itself changed, replace this ONE card only.
-       * This intentionally does not rebuild the other verification cards.
-       */
       if (
         oldVideoUrl !== newVideoUrl ||
         oldPhoto !== newPhoto
       ) {
-        const oldTop =
-          card.previousSibling;
-
         card.outerHTML =
           verificationCardHtml(request);
-
-        void oldTop;
         return true;
       }
 
@@ -6720,174 +6749,217 @@
     }
 
 
-    function reconcileVerificationRequests(
-      nextRequests,
-      { forceRender = false } = {}
-    ) {
+    function getPendingVerificationRequests() {
+      return verificationRequests.filter(
+        (request) =>
+          getVerificationStatus(request) === "pending"
+      );
+    }
+
+
+    function renderVerificationLoadMoreFooter() {
+
+      const table = $("verificationTable");
+      if (!table) return;
+
+      const oldFooter =
+        table.querySelector(
+          ".verification-load-more-wrap"
+        );
+
+      if (oldFooter) {
+        oldFooter.remove();
+      }
+
+      const pending =
+        getPendingVerificationRequests();
+
+      const shown =
+        table.querySelectorAll(
+          ".verification-card"
+        ).length;
+
+      if (
+        pending.length <= shown
+      ) {
+        return;
+      }
+
+      table.insertAdjacentHTML(
+        "beforeend",
+        `
+          <div class="verification-load-more-wrap">
+            <button
+              class="btn btn-outline"
+              type="button"
+              onclick="loadMoreVerificationRequests()"
+            >
+              <i class="fa-solid fa-chevron-down"></i>
+              Show ${Math.min(
+                VERIFICATION_RENDER_LIMIT,
+                pending.length - shown
+              )} more
+            </button>
+            <span>
+              Showing ${shown} of ${pending.length} loaded requests
+            </span>
+          </div>
+        `
+      );
+    }
+
+
+    function fillVisibleVerificationCards() {
+
+      const table = $("verificationTable");
+      if (!table) return;
+
+      const pending =
+        getPendingVerificationRequests();
+
+      const currentCards =
+        table.querySelectorAll(
+          ".verification-card"
+        ).length;
+
+      const target =
+        Math.min(
+          verificationVisibleLimit,
+          pending.length
+        );
+
+      if (currentCards >= target) {
+        renderVerificationLoadMoreFooter();
+        return;
+      }
+
+      pending
+        .slice(currentCards, target)
+        .forEach((request) => {
+          appendVerificationCard(request);
+        });
+
+      renderVerificationLoadMoreFooter();
+      scheduleVerificationVideoPrefetch();
+    }
+
+
+    function renderVerificationTable() {
+
+      const table = $("verificationTable");
+      if (!table) return;
+
+      const pending =
+        getPendingVerificationRequests();
+
+      updateVerificationCount();
+      verificationVisibleLimit =
+        Math.max(
+          VERIFICATION_RENDER_LIMIT,
+          Math.min(
+            verificationVisibleLimit,
+            VERIFICATION_QUERY_LIMIT
+          )
+        );
+
+      if (!pending.length) {
+        showVerificationEmptyState();
+        verificationHasRendered = true;
+        return;
+      }
+
+      table.innerHTML = "";
+
+      pending
+        .slice(
+          0,
+          Math.min(
+            verificationVisibleLimit,
+            pending.length
+          )
+        )
+        .forEach((request) => {
+          table.insertAdjacentHTML(
+            "beforeend",
+            verificationCardHtml(request)
+          );
+        });
+
+      renderVerificationLoadMoreFooter();
+      verificationHasRendered = true;
+      scheduleVerificationVideoPrefetch();
+    }
+
+
+    function reconcileVerificationRequests(nextRequests) {
 
       const normalizedNext =
         Array.isArray(nextRequests)
           ? nextRequests
+              .slice(0, VERIFICATION_QUERY_LIMIT)
           : [];
 
       const previousMap =
         new Map(
           verificationRequests.map(
-            (item) => [
-              item.id,
-              item
-            ]
+            (item) => [item.id, item]
           )
         );
 
       const nextMap =
         new Map(
           normalizedNext.map(
-            (item) => [
-              item.id,
-              item
-            ]
+            (item) => [item.id, item]
           )
         );
 
       verificationRequests =
         normalizedNext;
 
-      /*
-       * First render only.
-       */
       if (
-        forceRender ||
         !verificationHasRendered ||
-        !document.querySelector(
-          "#verificationTable .verification-card, #verificationTable .verification-empty"
-        )
+        !$("verificationTable")
       ) {
         renderVerificationTable();
         return;
       }
 
-      let domChanged = false;
-
-      /*
-       * Requests removed from Firestore.
-       */
-      previousMap.forEach(
-        (oldRequest, id) => {
-          if (!nextMap.has(id)) {
-            if (removeVerificationCard(id)) {
-              domChanged = true;
-            }
-          }
+      previousMap.forEach((oldRequest, id) => {
+        if (!nextMap.has(id)) {
+          removeVerificationCard(id);
         }
-      );
+      });
 
-      /*
-       * Requests added or changed.
-       */
-      nextMap.forEach(
-        (nextRequest, id) => {
+      nextMap.forEach((nextRequest, id) => {
 
-          const oldRequest =
-            previousMap.get(id);
-
-          const oldPending =
-            oldRequest
-              ? getVerificationStatus(oldRequest) === "pending"
-              : false;
-
-          const newPending =
-            getVerificationStatus(nextRequest) === "pending";
-
-          /*
-           * Never let a realtime snapshot put back a card while
-           * its Approve/Reject operation is still in flight.
-           */
-          if (
-            verificationActionInFlight.has(id)
-          ) {
-            return;
-          }
-
-          if (
-            !oldRequest &&
-            newPending
-          ) {
-            appendVerificationCard(nextRequest);
-            domChanged = true;
-            return;
-          }
-
-          if (
-            oldPending &&
-            !newPending
-          ) {
-            if (removeVerificationCard(id)) {
-              domChanged = true;
-            }
-            return;
-          }
-
-          if (
-            !oldPending &&
-            newPending
-          ) {
-            appendVerificationCard(nextRequest);
-            domChanged = true;
-            return;
-          }
-
-          /*
-           * Pending -> Pending:
-           * Do not replace the card unless its actual media changed.
-           * This is what keeps an already-loaded video alive.
-           */
-          if (
-            oldPending &&
-            newPending
-          ) {
-            if (
-              refreshVerificationCardDetails(
-                nextRequest
-              )
-            ) {
-              domChanged = true;
-            }
-          }
+        if (verificationActionInFlight.has(id)) {
+          return;
         }
-      );
+
+        const oldRequest =
+          previousMap.get(id);
+
+        if (!oldRequest) {
+          fillVisibleVerificationCards();
+          return;
+        }
+
+        refreshVerificationCardDetails(
+          nextRequest
+        );
+      });
 
       updateVerificationCount();
 
-      const hasPendingCards =
-        !!document.querySelector(
-          "#verificationTable .verification-card"
-        );
-
-      const hasPendingRequests =
-        normalizedNext.some(
-          (request) =>
-            getVerificationStatus(request) === "pending"
-        );
-
       if (
-        !hasPendingCards &&
-        hasPendingRequests
+        getPendingVerificationRequests().length === 0
       ) {
-        renderVerificationTable();
+        showVerificationEmptyState();
         return;
       }
 
-      if (
-        !hasPendingCards &&
-        !hasPendingRequests
-      ) {
-        showVerificationEmptyState();
-      }
-
-      if (domChanged) {
-        scheduleVerificationVideoPrefetch();
-      }
+      fillVisibleVerificationCards();
+      renderVerificationLoadMoreFooter();
     }
 
 
@@ -6897,12 +6969,25 @@
         return;
       }
 
-      verificationRequestsUnsubscribe =
-        onSnapshot(
+      const pendingVerificationQuery =
+        query(
           collection(
             db,
             "verification_requests"
           ),
+          where(
+            "status",
+            "==",
+            "pending"
+          ),
+          limit(
+            VERIFICATION_QUERY_LIMIT
+          )
+        );
+
+      verificationRequestsUnsubscribe =
+        onSnapshot(
+          pendingVerificationQuery,
           (snapshot) => {
 
             const nextRequests =
@@ -6920,10 +7005,7 @@
 
             writeCache(
               "verification",
-              verificationRequests.slice(
-                0,
-                1000
-              )
+              verificationRequests.slice(0, VERIFICATION_QUERY_LIMIT)
             );
           },
           (error) => {
@@ -6940,10 +7022,6 @@
       { silent = false } = {}
     ) {
 
-      /*
-       * Do not clear the existing cards during refresh.
-       * Clearing them would destroy loaded video elements.
-       */
       if (
         !silent &&
         !verificationHasRendered
@@ -6962,37 +7040,43 @@
 
       try {
 
-        const snapshot =
-          await getDocs(
+        verificationVisibleLimit =
+          VERIFICATION_RENDER_LIMIT;
+
+        const pendingVerificationQuery =
+          query(
             collection(
               db,
               "verification_requests"
+            ),
+            where(
+              "status",
+              "==",
+              "pending"
+            ),
+            limit(
+              VERIFICATION_QUERY_LIMIT
             )
           );
 
-        const nextRequests =
+        const snapshot =
+          await getDocs(
+            pendingVerificationQuery
+          );
+
+        reconcileVerificationRequests(
           snapshot.docs.map(
             (docSnapshot) => ({
               id:
                 docSnapshot.id,
               ...docSnapshot.data()
             })
-          );
-
-        reconcileVerificationRequests(
-          nextRequests,
-          {
-            forceRender:
-              !verificationHasRendered
-          }
+          )
         );
 
         writeCache(
           "verification",
-          verificationRequests.slice(
-            0,
-            1000
-          )
+          verificationRequests.slice(0, VERIFICATION_QUERY_LIMIT)
         );
 
         verificationHasRendered = true;
@@ -7005,7 +7089,6 @@
         );
 
         if (!verificationHasRendered) {
-
           $("verificationTable").innerHTML = `
             <div class="verification-empty">
               <i class="fa-solid fa-triangle-exclamation"></i>
@@ -7031,68 +7114,26 @@
     }
 
 
-    function renderVerificationTable() {
-
-      const pending =
-        verificationRequests.filter(
-          (request) =>
-            getVerificationStatus(request) === "pending"
-        );
-
-      updateVerificationCount();
-
-      if (!pending.length) {
-        showVerificationEmptyState();
-        verificationHasRendered = true;
-        return;
-      }
-
-      /*
-       * This full render is used ONLY when the queue itself needs a
-       * complete initial/explicit reconstruction. Normal Approve/Reject
-       * operations never call this function.
-       */
-      $("verificationTable").innerHTML =
-        pending
-          .map(
-            (request) =>
-              verificationCardHtml(request)
-          )
-          .join("");
-
-      verificationHasRendered = true;
-
-      scheduleVerificationVideoPrefetch();
-    }
-
-
     /* ==========================================================
-       VERIFICATION VIDEO PREFETCH QUEUE
-       - Loads videos automatically ONE BY ONE.
-       - Never calls play().
-       - User must press the native Play button.
-       - Existing video elements survive realtime updates.
+       SAFE VIDEO PREFETCH
+       - Only the first two unloaded videos are prefetched.
+       - No autoplay.
+       - No repeated load() calls from realtime snapshots.
     =========================================================== */
 
-    let verificationVideoQueueToken = 0;
-
-
     function scheduleVerificationVideoPrefetch() {
+
+      if (verificationPrefetchTimer) {
+        clearTimeout(verificationPrefetchTimer);
+      }
 
       const token =
         ++verificationVideoQueueToken;
 
-      const videos =
-        Array.from(
-          document.querySelectorAll(
-            "#verificationTable video[data-video-src]"
-          )
-        );
+      verificationPrefetchTimer =
+        setTimeout(() => {
 
-      if (!videos.length) return;
-
-      const loadNext =
-        (index) => {
+          verificationPrefetchTimer = null;
 
           if (
             token !==
@@ -7101,119 +7142,77 @@
             return;
           }
 
-          if (
-            index >=
-            videos.length
-          ) {
-            return;
-          }
-
-          const video =
-            videos[index];
-
-          if (!video) {
-            loadNext(index + 1);
-            return;
-          }
-
-          const start =
-            () => {
-
-              if (
-                token !==
-                verificationVideoQueueToken
-              ) {
-                return;
-              }
-
-              /*
-               * If this video is already loaded, skip it without
-               * touching src/load/playback state.
-               */
-              const src =
-                video.dataset.videoSrc;
-
-              if (
-                !src ||
-                video.dataset.sourceLoaded === "1"
-              ) {
-                loadNext(index + 1);
-                return;
-              }
-
-              video.dataset.sourceLoaded =
-                "1";
-
-              video.preload =
-                "auto";
-
-              video.src =
-                src;
-
-              video.load();
-
-              let advanced =
-                false;
-
-              const advance =
-                () => {
-
-                  if (advanced) {
-                    return;
-                  }
-
-                  advanced = true;
-
-                  video.classList.add(
-                    "is-ready"
-                  );
-
-                  loadNext(index + 1);
-                };
-
-              video.addEventListener(
-                "canplay",
-                advance,
-                { once: true }
+          const videos =
+            Array.from(
+              document.querySelectorAll(
+                "#verificationTable video[data-video-src]"
+              )
+            )
+              .filter(
+                (video) =>
+                  video.dataset.sourceLoaded !== "1"
+              )
+              .slice(
+                0,
+                VERIFICATION_VIDEO_PREFETCH_LIMIT
               );
 
-              video.addEventListener(
-                "loadedmetadata",
-                () => {
-                  video.classList.add(
-                    "is-ready"
-                  );
-                },
-                { once: true }
-              );
+          videos.forEach((video) => {
+            loadVerificationVideo(
+              video,
+              token
+            );
+          });
 
-              video.addEventListener(
-                "error",
-                () => {
-                  advance();
-                },
-                { once: true }
-              );
+        }, 120);
+    }
 
-              setTimeout(
-                () => {
-                  if (
-                    !advanced &&
-                    video.readyState >= 1
-                  ) {
-                    advance();
-                  }
-                },
-                5000
-              );
-            };
 
-          requestAnimationFrame(
-            start
-          );
-        };
+    function loadVerificationVideo(
+      video,
+      token = null
+    ) {
 
-      loadNext(0);
+      if (!video) return;
+
+      if (
+        token !== null &&
+        token !== verificationVideoQueueToken
+      ) {
+        return;
+      }
+
+      const src =
+        video.dataset.videoSrc;
+
+      if (
+        !src ||
+        video.dataset.sourceLoaded === "1"
+      ) {
+        return;
+      }
+
+      video.dataset.sourceLoaded = "1";
+      video.preload = "auto";
+      video.src = src;
+
+      video.addEventListener(
+        "loadedmetadata",
+        () => {
+          video.classList.add("is-ready");
+        },
+        { once: true }
+      );
+
+      video.addEventListener(
+        "canplay",
+        () => {
+          video.classList.add("is-ready");
+        },
+        { once: true }
+      );
+
+      video.load();
     }
 
 
@@ -7221,9 +7220,7 @@
       function(encodedId) {
 
         const id =
-          decodeURIComponent(
-            encodedId
-          );
+          decodeURIComponent(encodedId);
 
         const video =
           $("verification-video-" + id);
@@ -7232,14 +7229,11 @@
           $("verification-video-error-" + id);
 
         if (video) {
-          video.classList.add(
-            "is-ready"
-          );
+          video.classList.add("is-ready");
         }
 
         if (errorBox) {
-          errorBox.style.display =
-            "none";
+          errorBox.style.display = "none";
         }
       };
 
@@ -7248,9 +7242,7 @@
       function(encodedId) {
 
         const id =
-          decodeURIComponent(
-            encodedId
-          );
+          decodeURIComponent(encodedId);
 
         const video =
           $("verification-video-" + id);
@@ -7259,14 +7251,11 @@
           $("verification-video-error-" + id);
 
         if (video) {
-          video.classList.add(
-            "is-ready"
-          );
+          video.classList.add("is-ready");
         }
 
         if (errorBox) {
-          errorBox.style.display =
-            "none";
+          errorBox.style.display = "none";
         }
       };
 
@@ -7275,34 +7264,14 @@
       function(encodedId) {
 
         const id =
-          decodeURIComponent(
-            encodedId
-          );
+          decodeURIComponent(encodedId);
 
         const video =
           $("verification-video-" + id);
 
         if (!video) return;
 
-        const src =
-          video.dataset.videoSrc;
-
-        if (!src) return;
-
-        if (
-          video.dataset.sourceLoaded !== "1"
-        ) {
-          video.dataset.sourceLoaded =
-            "1";
-
-          video.preload =
-            "auto";
-
-          video.src =
-            src;
-
-          video.load();
-        }
+        loadVerificationVideo(video);
       };
 
 
@@ -7310,16 +7279,13 @@
       function(encodedId) {
 
         const id =
-          decodeURIComponent(
-            encodedId
-          );
+          decodeURIComponent(encodedId);
 
         const errorBox =
           $("verification-video-error-" + id);
 
         if (errorBox) {
-          errorBox.style.display =
-            "block";
+          errorBox.style.display = "block";
         }
       };
 
@@ -7328,9 +7294,7 @@
       function(encodedId) {
 
         const id =
-          decodeURIComponent(
-            encodedId
-          );
+          decodeURIComponent(encodedId);
 
         const video =
           $("verification-video-" + id);
@@ -7341,8 +7305,7 @@
         if (!video) return;
 
         if (errorBox) {
-          errorBox.style.display =
-            "none";
+          errorBox.style.display = "none";
         }
 
         const src =
@@ -7351,35 +7314,12 @@
         if (!src) return;
 
         try {
-
           video.pause();
-
-          video.removeAttribute(
-            "src"
-          );
-
-          video.load();
-
-          video.dataset.sourceLoaded =
-            "0";
-
-          video.classList.remove(
-            "is-ready"
-          );
-
-          video.preload =
-            "auto";
-
-          video.src =
-            src;
-
-          video.dataset.sourceLoaded =
-            "1";
-
-          video.load();
-
+          video.removeAttribute("src");
+          video.dataset.sourceLoaded = "0";
+          video.classList.remove("is-ready");
+          loadVerificationVideo(video);
         } catch (error) {
-
           console.error(
             "retryVerificationVideo:",
             error
@@ -7392,9 +7332,7 @@
       function(encodedUrl) {
 
         const url =
-          decodeURIComponent(
-            encodedUrl
-          );
+          decodeURIComponent(encodedUrl);
 
         if (!url) return;
 
@@ -7436,34 +7374,20 @@
         "pending"
       ) {
         removeVerificationCard(id);
-        updateVerificationCount();
         return;
       }
 
-      verificationActionInFlight.add(
-        id
-      );
+      verificationActionInFlight.add(id);
 
       const previousStatus =
-        request.status ||
-        "pending";
+        request.status || "pending";
 
-      /*
-       * Optimistic UI:
-       * remove this card immediately so the next verification is visible
-       * without waiting for Firestore or rebuilding the entire queue.
-       */
-      request.status =
-        decision;
-
+      // Optimistic UI: remove ONLY this card.
+      request.status = decision;
       removeVerificationCard(id);
       updateVerificationCount();
-
-      /*
-       * Re-scan the remaining queue after removing one card.
-       * Already-loaded videos are skipped without changing their src/load state.
-       */
-      scheduleVerificationVideoPrefetch();
+      fillVisibleVerificationCards();
+      renderVerificationLoadMoreFooter();
 
       try {
 
@@ -7480,24 +7404,16 @@
         batch.update(
           requestRef,
           {
-            status:
-              decision,
-            reviewedAt:
-              Timestamp.now(),
-            reviewedBy:
-              currentUser.uid
+            status: decision,
+            reviewedAt: Timestamp.now(),
+            reviewedBy: currentUser.uid
           }
         );
 
-        /*
-         * Approving the request also marks the user verified.
-         * Batch commit keeps these two changes atomic.
-         */
         if (
           decision === "approved" &&
           request.uid
         ) {
-
           const userRef =
             doc(
               db,
@@ -7505,28 +7421,23 @@
               request.uid
             );
 
-          batch.update(
+          batch.set(
             userRef,
             {
-              isVerified:
-                true
-            }
+              isVerified: true
+            },
+            { merge: true }
           );
         }
 
         await batch.commit();
 
-        const currentRequest =
-          verificationRequests.find(
+        // Keep local state consistent with the optimistic removal.
+        verificationRequests =
+          verificationRequests.filter(
             (item) =>
-              item.id === id
+              item.id !== id
           );
-
-        if (currentRequest) {
-          currentRequest.status = decision;
-          currentRequest.reviewedAt = Timestamp.now();
-          currentRequest.reviewedBy = currentUser.uid;
-        }
 
         if (
           decision === "approved" &&
@@ -7535,8 +7446,7 @@
           updateLocalUser(
             request.uid,
             {
-              isVerified:
-                true
+              isVerified: true
             }
           );
 
@@ -7546,10 +7456,7 @@
 
         writeCache(
           "verification",
-          verificationRequests.slice(
-            0,
-            1000
-          )
+          verificationRequests.slice(0, VERIFICATION_QUERY_LIMIT)
         );
 
         showToast(
@@ -7565,74 +7472,60 @@
           error
         );
 
-        /*
-         * Restore the request/card if Firestore failed.
-         */
-        request.status =
-          previousStatus;
-
-        const currentRequest =
-          verificationRequests.find(
-            (item) =>
-              item.id === id
-          );
-
-        if (currentRequest) {
-          currentRequest.status =
-            previousStatus;
-        }
+        // Restore the request/card only if Firestore failed.
+        request.status = previousStatus;
 
         if (
-          getVerificationStatus(request) ===
-          "pending"
+          !verificationRequests.some(
+            (item) =>
+              item.id === id
+          )
         ) {
-          appendVerificationCard(
-            request
+          verificationRequests.push(request);
+        } else {
+          const localRequest =
+            verificationRequests.find(
+              (item) =>
+                item.id === id
+            );
+
+          if (localRequest) {
+            localRequest.status = previousStatus;
+          }
+        }
+
+        verificationRequests =
+          verificationRequests.slice(
+            0,
+            VERIFICATION_QUERY_LIMIT
           );
 
-          scheduleVerificationVideoPrefetch();
-        }
+        fillVisibleVerificationCards();
+        renderVerificationLoadMoreFooter();
+        updateVerificationCount();
 
         writeCache(
           "verification",
-          verificationRequests.slice(
-            0,
-            1000
-          )
+          verificationRequests.slice(0, VERIFICATION_QUERY_LIMIT)
         );
 
         showToast(
           decision === "approved"
-            ? "Failed to approve verification: " + (
-                error.message || ""
-              )
-            : "Failed to reject verification: " + (
-                error.message || ""
-              ),
+            ? "Failed to approve verification: " + (error.message || "")
+            : "Failed to reject verification: " + (error.message || ""),
           "error"
         );
 
       } finally {
-
-        verificationActionInFlight.delete(
-          id
-        );
-
-        updateVerificationCount();
+        verificationActionInFlight.delete(id);
       }
     }
 
 
     window.approveVerification =
       function(encodedId) {
-
-        const id =
-          decodeURIComponent(
-            encodedId
-          );
-
         processVerificationAction(
-          id,
+          decodeURIComponent(encodedId),
           "approved"
         );
       };
@@ -7640,16 +7533,41 @@
 
     window.rejectVerification =
       function(encodedId) {
-
-        const id =
-          decodeURIComponent(
-            encodedId
-          );
-
         processVerificationAction(
-          id,
+          decodeURIComponent(encodedId),
           "rejected"
         );
+      };
+
+
+    window.loadMoreVerificationRequests =
+      function() {
+
+        const pending =
+          getPendingVerificationRequests();
+
+        const currentShown =
+          $("verificationTable")
+            ?.querySelectorAll(
+              ".verification-card"
+            )
+            ?.length || 0;
+
+        if (
+          currentShown >= pending.length
+        ) {
+          return;
+        }
+
+        verificationVisibleLimit =
+          Math.min(
+            verificationVisibleLimit + VERIFICATION_RENDER_LIMIT,
+            pending.length
+          );
+
+        fillVisibleVerificationCards();
+        renderVerificationLoadMoreFooter();
+        scheduleVerificationVideoPrefetch();
       };
 
 
