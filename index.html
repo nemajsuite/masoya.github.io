@@ -3355,6 +3355,7 @@
       getDocs,
       onSnapshot,
       updateDoc,
+      writeBatch,
       deleteDoc,
       setDoc,
       query,
@@ -3427,6 +3428,10 @@
     let groupedReports = [];
 
     let verificationRequests = [];
+
+    let verificationHasRendered = false;
+
+    const verificationActionInFlight = new Set();
 
     let currentUserFilter = "all";
 
@@ -3999,7 +4004,7 @@
           await loadReports();
         }
 
-        if (page === "verification") {
+        if (page === "verification" && !verificationHasRendered) {
           await loadVerificationRequests();
         }
 
@@ -4327,6 +4332,7 @@
       if (!entry || !Array.isArray(entry.data)) return false;
       verificationRequests = entry.data;
       renderVerificationTable();
+      verificationHasRendered = true;
       return true;
     }
 
@@ -6304,59 +6310,655 @@
 
     /* ==========================================================
        VERIFICATION REQUESTS
+       - Initial load renders the queue once.
+       - Realtime updates are applied incrementally.
+       - Approve/Reject removes ONLY the affected card.
+       - Existing video elements are never rebuilt after an action.
+       - No confirmation dialog for Approve/Reject.
     =========================================================== */
 
     let verificationRequestsUnsubscribe = null;
 
-    function startVerificationRequestsRealtime() {
-      if (verificationRequestsUnsubscribe) {
-        return;
-      }
 
-      verificationRequestsUnsubscribe = onSnapshot(
-        collection(
-          db,
-          "verification_requests"
-        ),
-        (snapshot) => {
-          verificationRequests = snapshot.docs.map((docSnapshot) => ({
-            id: docSnapshot.id,
-            ...docSnapshot.data()
-          }));
+    function getVerificationStatus(request) {
+      return String(
+        request?.status || "pending"
+      ).toLowerCase();
+    }
 
-          writeCache(
-            "verification",
-            verificationRequests.slice(0, 1000)
-          );
 
-          renderVerificationTable();
-          scheduleVerificationVideoPrefetch();
-        },
-        (error) => {
-          console.error(
-            "Verification realtime listener:",
-            error
-          );
+    function getVerificationVideoUrl(request) {
+      return (
+        request?.videoUrl ||
+        request?.videoURL ||
+        request?.verificationVideoUrl ||
+        request?.verificationVideoURL ||
+        request?.video ||
+        ""
+      );
+    }
+
+
+    function getVerificationSubmittedValue(request) {
+      return (
+        request?.submittedAt ||
+        request?.createdAt ||
+        request?.created_at ||
+        request?.timestamp ||
+        null
+      );
+    }
+
+
+    function getVerificationUser(request) {
+      const uid =
+        request?.uid ||
+        request?.id;
+
+      return (
+        allUsers.find(
+          (item) =>
+            item.uid === uid
+        ) || {
+          uid,
+          fullName:
+            request?.name ||
+            "Unknown User",
+          name:
+            request?.name ||
+            "Unknown User",
+          photoUrl:
+            request?.photoUrl ||
+            ""
         }
       );
     }
 
 
-    async function loadVerificationRequests({ silent = false } = {}) {
+    function getVerificationProfilePhoto(request) {
+      const user =
+        getVerificationUser(request);
 
-      if (!silent) {
-        $("verificationTable").innerHTML = `
-          <tr>
-            <td colspan="5" class="loading-row">
-              <i class="fa-solid fa-spinner fa-spin"></i>
-              Loading verification requests...
-            </td>
-          </tr>
-        `;
-      } else {
-        showSyncStatus("Refreshing verification…");
+      return (
+        request?.photoUrl ||
+        getUserPhoto(user) ||
+        ""
+      );
+    }
+
+
+    function verificationCardHtml(request) {
+
+      const uid =
+        request?.uid ||
+        request?.id;
+
+      const user =
+        getVerificationUser(request);
+
+      const profilePhoto =
+        getVerificationProfilePhoto(request);
+
+      const videoUrl =
+        getVerificationVideoUrl(request);
+
+      const submittedValue =
+        getVerificationSubmittedValue(request);
+
+      const requestId =
+        encodeURIComponent(
+          request.id
+        );
+
+      const encodedVideo =
+        videoUrl
+          ? encodeURIComponent(videoUrl)
+          : "";
+
+      const encodedPhoto =
+        profilePhoto
+          ? encodeURIComponent(profilePhoto)
+          : "";
+
+      return `
+        <article
+          id="verification-card-${escapeHtml(request.id)}"
+          class="verification-card"
+          data-verification-id="${escapeHtml(request.id)}"
+        >
+
+          <div class="verification-card-top">
+
+            <div class="verification-user-info">
+              ${userCellHtml(user)}
+            </div>
+
+            <div class="verification-card-meta">
+              ${accountBadge(user)}
+              ${verifiedBadge(user)}
+              ${reportStatusBadge(getVerificationStatus(request))}
+            </div>
+
+          </div>
+
+          <div class="verification-content">
+
+            <section class="verification-panel">
+
+              <div class="verification-panel-label">
+                Verification Video
+              </div>
+
+              ${
+                videoUrl
+                  ? `
+                    <video
+                      id="verification-video-${escapeHtml(request.id)}"
+                      class="verification-video verification-video-pending"
+                      controls
+                      preload="auto"
+                      playsinline
+                      webkit-playsinline
+                      poster="${escapeHtml(profilePhoto || "")}"
+                      data-video-src="${escapeHtml(videoUrl)}"
+                      onloadedmetadata="handleVerificationVideoLoaded('${requestId}')"
+                      oncanplay="handleVerificationVideoReady('${requestId}')"
+                      onerror="showVerificationVideoError('${requestId}')"
+                      onclick="ensureVerificationVideoSource('${requestId}')"
+                    >
+                      Your browser does not support HTML5 video.
+                    </video>
+
+                    <div class="verification-video-status">
+                      <i class="fa-solid fa-circle-info"></i>
+                      Video loads automatically in order, one at a time. Playback starts only when you press Play.
+                    </div>
+
+                    <div
+                      id="verification-video-error-${escapeHtml(request.id)}"
+                      class="verification-video-error"
+                    >
+                      This browser could not play the embedded video. The original file can still be opened directly.
+                    </div>
+
+                    <div class="verification-video-actions">
+
+                      <button
+                        class="btn btn-outline btn-sm"
+                        type="button"
+                        onclick="openVerificationVideo('${encodedVideo}')"
+                      >
+                        <i class="fa-solid fa-up-right-from-square"></i>
+                        Open Video
+                      </button>
+
+                      <button
+                        class="btn btn-secondary btn-sm"
+                        type="button"
+                        onclick="retryVerificationVideo('${requestId}')"
+                      >
+                        <i class="fa-solid fa-rotate-right"></i>
+                        Reload Video
+                      </button>
+
+                    </div>
+                  `
+                  : `
+                    <div class="verification-empty" style="padding:55px 10px;">
+                      <i class="fa-solid fa-video-slash"></i>
+                      <div>No verification video URL was found.</div>
+                    </div>
+                  `
+              }
+
+            </section>
+
+            <section class="verification-panel">
+
+              <div class="verification-panel-label">
+                Profile Picture
+              </div>
+
+              <div class="verification-photo-wrap">
+
+                ${
+                  profilePhoto
+                    ? `
+                      <img
+                        class="verification-photo"
+                        src="${escapeHtml(profilePhoto)}"
+                        alt="${escapeHtml(getUserName(user))}"
+                        loading="lazy"
+                        onclick="openImagePreview('${encodedPhoto}')"
+                        onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\"verification-empty\" style=\"padding:30px;\"><i class=\"fa-solid fa-image\"></i><div>Profile picture could not be loaded.</div></div>';"
+                      />
+                    `
+                    : `
+                      <div class="verification-empty" style="padding:30px;">
+                        <i class="fa-solid fa-user"></i>
+                        <div>No profile picture available.</div>
+                      </div>
+                    `
+                }
+
+              </div>
+
+              <div class="verification-date">
+                <i class="fa-regular fa-calendar"></i>
+                Submitted:
+                ${formatDate(submittedValue)}
+              </div>
+
+            </section>
+
+          </div>
+
+          <div class="verification-card-actions">
+
+            <button
+              class="btn btn-success"
+              type="button"
+              onclick="approveVerification('${requestId}')"
+            >
+              <i class="fa-solid fa-check"></i>
+              Approve & Verify
+            </button>
+
+            <button
+              class="btn btn-danger"
+              type="button"
+              onclick="rejectVerification('${requestId}')"
+            >
+              <i class="fa-solid fa-xmark"></i>
+              Reject
+            </button>
+
+          </div>
+
+        </article>
+      `;
+    }
+
+
+    function updateVerificationCount() {
+      const pendingCount =
+        verificationRequests.filter(
+          (request) =>
+            getVerificationStatus(request) === "pending"
+        ).length;
+
+      $("verificationCount").textContent =
+        `${pendingCount} pending`;
+    }
+
+
+    function showVerificationEmptyState() {
+      $("verificationTable").innerHTML = `
+        <div class="verification-empty">
+          <i class="fa-solid fa-circle-check"></i>
+          <div>No pending verification requests.</div>
+        </div>
+      `;
+    }
+
+
+    function removeVerificationCard(id) {
+      const card =
+        $("verification-card-" + id);
+
+      if (!card) return false;
+
+      const videos =
+        card.querySelectorAll("video");
+
+      videos.forEach((video) => {
+        try {
+          video.pause();
+          video.removeAttribute("src");
+          video.load();
+        } catch (_) {}
+      });
+
+      card.remove();
+
+      if (!document.querySelector(
+        "#verificationTable .verification-card"
+      )) {
+        showVerificationEmptyState();
       }
 
+      updateVerificationCount();
+      return true;
+    }
+
+
+    function appendVerificationCard(request) {
+
+      if (
+        !request ||
+        getVerificationStatus(request) !== "pending"
+      ) {
+        return;
+      }
+
+      const table =
+        $("verificationTable");
+
+      if (!table) return;
+
+      if (
+        table.querySelector(
+          "#verification-card-" + request.id
+        )
+      ) {
+        return;
+      }
+
+      const emptyState =
+        table.querySelector(
+          ".verification-empty"
+        );
+
+      if (emptyState) {
+        table.innerHTML = "";
+      }
+
+      table.insertAdjacentHTML(
+        "beforeend",
+        verificationCardHtml(request)
+      );
+
+      updateVerificationCount();
+    }
+
+
+    function refreshVerificationCardDetails(request) {
+
+      const card =
+        $("verification-card-" + request.id);
+
+      if (!card) return;
+
+      const oldVideoUrl =
+        card
+          .querySelector("video")
+          ?.dataset
+          ?.videoSrc ||
+        "";
+
+      const newVideoUrl =
+        getVerificationVideoUrl(request);
+
+      const oldPhoto =
+        card
+          .querySelector(".verification-photo")
+          ?.getAttribute("src") ||
+        "";
+
+      const newPhoto =
+        getVerificationProfilePhoto(request);
+
+      /*
+       * If the media itself changed, replace this ONE card only.
+       * This intentionally does not rebuild the other verification cards.
+       */
+      if (
+        oldVideoUrl !== newVideoUrl ||
+        oldPhoto !== newPhoto
+      ) {
+        const oldTop =
+          card.previousSibling;
+
+        card.outerHTML =
+          verificationCardHtml(request);
+
+        void oldTop;
+        return true;
+      }
+
+      return false;
+    }
+
+
+    function reconcileVerificationRequests(
+      nextRequests,
+      { forceRender = false } = {}
+    ) {
+
+      const normalizedNext =
+        Array.isArray(nextRequests)
+          ? nextRequests
+          : [];
+
+      const previousMap =
+        new Map(
+          verificationRequests.map(
+            (item) => [
+              item.id,
+              item
+            ]
+          )
+        );
+
+      const nextMap =
+        new Map(
+          normalizedNext.map(
+            (item) => [
+              item.id,
+              item
+            ]
+          )
+        );
+
+      verificationRequests =
+        normalizedNext;
+
+      /*
+       * First render only.
+       */
+      if (
+        forceRender ||
+        !verificationHasRendered ||
+        !document.querySelector(
+          "#verificationTable .verification-card, #verificationTable .verification-empty"
+        )
+      ) {
+        renderVerificationTable();
+        return;
+      }
+
+      let domChanged = false;
+
+      /*
+       * Requests removed from Firestore.
+       */
+      previousMap.forEach(
+        (oldRequest, id) => {
+          if (!nextMap.has(id)) {
+            if (removeVerificationCard(id)) {
+              domChanged = true;
+            }
+          }
+        }
+      );
+
+      /*
+       * Requests added or changed.
+       */
+      nextMap.forEach(
+        (nextRequest, id) => {
+
+          const oldRequest =
+            previousMap.get(id);
+
+          const oldPending =
+            oldRequest
+              ? getVerificationStatus(oldRequest) === "pending"
+              : false;
+
+          const newPending =
+            getVerificationStatus(nextRequest) === "pending";
+
+          /*
+           * Never let a realtime snapshot put back a card while
+           * its Approve/Reject operation is still in flight.
+           */
+          if (
+            verificationActionInFlight.has(id)
+          ) {
+            return;
+          }
+
+          if (
+            !oldRequest &&
+            newPending
+          ) {
+            appendVerificationCard(nextRequest);
+            domChanged = true;
+            return;
+          }
+
+          if (
+            oldPending &&
+            !newPending
+          ) {
+            if (removeVerificationCard(id)) {
+              domChanged = true;
+            }
+            return;
+          }
+
+          if (
+            !oldPending &&
+            newPending
+          ) {
+            appendVerificationCard(nextRequest);
+            domChanged = true;
+            return;
+          }
+
+          /*
+           * Pending -> Pending:
+           * Do not replace the card unless its actual media changed.
+           * This is what keeps an already-loaded video alive.
+           */
+          if (
+            oldPending &&
+            newPending
+          ) {
+            if (
+              refreshVerificationCardDetails(
+                nextRequest
+              )
+            ) {
+              domChanged = true;
+            }
+          }
+        }
+      );
+
+      updateVerificationCount();
+
+      const hasPendingCards =
+        !!document.querySelector(
+          "#verificationTable .verification-card"
+        );
+
+      const hasPendingRequests =
+        normalizedNext.some(
+          (request) =>
+            getVerificationStatus(request) === "pending"
+        );
+
+      if (
+        !hasPendingCards &&
+        hasPendingRequests
+      ) {
+        renderVerificationTable();
+        return;
+      }
+
+      if (
+        !hasPendingCards &&
+        !hasPendingRequests
+      ) {
+        showVerificationEmptyState();
+      }
+
+      if (domChanged) {
+        scheduleVerificationVideoPrefetch();
+      }
+    }
+
+
+    function startVerificationRequestsRealtime() {
+
+      if (verificationRequestsUnsubscribe) {
+        return;
+      }
+
+      verificationRequestsUnsubscribe =
+        onSnapshot(
+          collection(
+            db,
+            "verification_requests"
+          ),
+          (snapshot) => {
+
+            const nextRequests =
+              snapshot.docs.map(
+                (docSnapshot) => ({
+                  id:
+                    docSnapshot.id,
+                  ...docSnapshot.data()
+                })
+              );
+
+            reconcileVerificationRequests(
+              nextRequests
+            );
+
+            writeCache(
+              "verification",
+              verificationRequests.slice(
+                0,
+                1000
+              )
+            );
+          },
+          (error) => {
+            console.error(
+              "Verification realtime listener:",
+              error
+            );
+          }
+        );
+    }
+
+
+    async function loadVerificationRequests(
+      { silent = false } = {}
+    ) {
+
+      /*
+       * Do not clear the existing cards during refresh.
+       * Clearing them would destroy loaded video elements.
+       */
+      if (
+        !silent &&
+        !verificationHasRendered
+      ) {
+        $("verificationTable").innerHTML = `
+          <div class="verification-empty">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            <div>Loading verification requests...</div>
+          </div>
+        `;
+      } else {
+        showSyncStatus(
+          "Refreshing verification…"
+        );
+      }
 
       try {
 
@@ -6368,35 +6970,47 @@
             )
           );
 
-
-        verificationRequests = [];
-
-        snapshot.forEach(
-          (docSnapshot) => {
-
-            verificationRequests.push({
+        const nextRequests =
+          snapshot.docs.map(
+            (docSnapshot) => ({
               id:
                 docSnapshot.id,
               ...docSnapshot.data()
-            });
+            })
+          );
 
+        reconcileVerificationRequests(
+          nextRequests,
+          {
+            forceRender:
+              !verificationHasRendered
           }
         );
 
+        writeCache(
+          "verification",
+          verificationRequests.slice(
+            0,
+            1000
+          )
+        );
 
-        writeCache("verification", verificationRequests.slice(0, 1000));
-        renderVerificationTable();
-        scheduleVerificationVideoPrefetch();
+        verificationHasRendered = true;
 
       } catch (error) {
 
-        console.error(error);
+        console.error(
+          "loadVerificationRequests:",
+          error
+        );
 
-        if (!silent) {
+        if (!verificationHasRendered) {
+
           $("verificationTable").innerHTML = `
             <div class="verification-empty">
               <i class="fa-solid fa-triangle-exclamation"></i>
               <div>Failed to load requests.</div>
+              <small>${escapeHtml(error.message || "")}</small>
             </div>
           `;
 
@@ -6404,12 +7018,16 @@
             "Failed to load verification requests.",
             "error"
           );
+        } else {
+          showToast(
+            "Verification refresh failed.",
+            "error"
+          );
         }
 
       } finally {
         hideSyncStatus();
       }
-
     }
 
 
@@ -6418,235 +7036,31 @@
       const pending =
         verificationRequests.filter(
           (request) =>
-            (
-              request.status ||
-              "pending"
-            ) ===
-            "pending"
+            getVerificationStatus(request) === "pending"
         );
 
-      $("verificationCount")
-        .textContent =
-        `${pending.length} pending`;
+      updateVerificationCount();
 
       if (!pending.length) {
-        $("verificationTable").innerHTML = `
-          <div class="verification-empty">
-            <i class="fa-solid fa-circle-check"></i>
-            <div>No pending verification requests.</div>
-          </div>
-        `;
+        showVerificationEmptyState();
+        verificationHasRendered = true;
         return;
       }
 
+      /*
+       * This full render is used ONLY when the queue itself needs a
+       * complete initial/explicit reconstruction. Normal Approve/Reject
+       * operations never call this function.
+       */
       $("verificationTable").innerHTML =
         pending
           .map(
-            (request) => {
-
-              const uid =
-                request.uid ||
-                request.id;
-
-              const user =
-                allUsers.find(
-                  (item) =>
-                    item.uid === uid
-                ) || {
-                  uid,
-                  fullName: request.name || "Unknown User",
-                  name: request.name || "Unknown User",
-                  photoUrl: request.photoUrl || ""
-                };
-
-              const profilePhoto =
-                request.photoUrl ||
-                getUserPhoto(user);
-
-              const videoUrl =
-                request.videoUrl ||
-                request.videoURL ||
-                request.verificationVideoUrl ||
-                request.verificationVideoURL ||
-                request.video ||
-                "";
-
-              const submittedValue =
-                request.submittedAt ||
-                request.createdAt ||
-                request.created_at ||
-                request.timestamp ||
-                null;
-
-              const requestId =
-                encodeURIComponent(request.id);
-
-              const encodedVideo =
-                videoUrl
-                  ? encodeURIComponent(videoUrl)
-                  : "";
-
-              const encodedPhoto =
-                profilePhoto
-                  ? encodeURIComponent(profilePhoto)
-                  : "";
-
-              return `
-                <article class="verification-card">
-
-                  <div class="verification-card-top">
-
-                    <div class="verification-user-info">
-                      ${userCellHtml(user)}
-                    </div>
-
-                    <div class="verification-card-meta">
-                      ${accountBadge(user)}
-                      ${verifiedBadge(user)}
-                      ${reportStatusBadge(request.status)}
-                    </div>
-
-                  </div>
-
-                  <div class="verification-content">
-
-                    <section class="verification-panel">
-
-                      <div class="verification-panel-label">
-                        Verification Video
-                      </div>
-
-                      ${
-                        videoUrl
-                          ? `
-                            <video
-                              id="verification-video-${escapeHtml(request.id)}"
-                              class="verification-video verification-video-pending"
-                              controls
-                              preload="auto"
-                              playsinline
-                              webkit-playsinline
-                              poster="${escapeHtml(profilePhoto || "")}"
-                              data-video-src="${escapeHtml(videoUrl)}"
-                              onloadedmetadata="handleVerificationVideoLoaded('${requestId}')"
-                              oncanplay="handleVerificationVideoReady('${requestId}')"
-                              onerror="showVerificationVideoError('${requestId}')"
-                              onclick="ensureVerificationVideoSource('${requestId}')"
-                            >
-                              Your browser does not support HTML5 video.
-                            </video>
-
-                            <div class="verification-video-status">
-                              <i class="fa-solid fa-circle-info"></i>
-                              Video loads automatically in order, one at a time. Playback starts only when you press Play.
-                            </div>
-
-                            <div
-                              id="verification-video-error-${escapeHtml(request.id)}"
-                              class="verification-video-error"
-                            >
-                              This browser could not play the embedded video. The original file can still be opened directly.
-                            </div>
-
-                            <div class="verification-video-actions">
-
-                              <button
-                                class="btn btn-outline btn-sm"
-                                type="button"
-                                onclick="openVerificationVideo('${encodedVideo}')"
-                              >
-                                <i class="fa-solid fa-up-right-from-square"></i>
-                                Open Video
-                              </button>
-
-                              <button
-                                class="btn btn-secondary btn-sm"
-                                type="button"
-                                onclick="retryVerificationVideo('${requestId}')"
-                              >
-                                <i class="fa-solid fa-rotate-right"></i>
-                                Reload Video
-                              </button>
-
-                            </div>
-                          `
-                          : `
-                            <div class="verification-empty" style="padding:55px 10px;">
-                              <i class="fa-solid fa-video-slash"></i>
-                              <div>No verification video URL was found.</div>
-                            </div>
-                          `
-                      }
-
-                    </section>
-
-                    <section class="verification-panel">
-
-                      <div class="verification-panel-label">
-                        Profile Picture
-                      </div>
-
-                      <div class="verification-photo-wrap">
-
-                        ${
-                          profilePhoto
-                            ? `
-                              <img
-                                class="verification-photo"
-                                src="${escapeHtml(profilePhoto)}"
-                                alt="${escapeHtml(getUserName(user))}"
-                                loading="lazy"
-                                onclick="openImagePreview('${encodedPhoto}')"
-                                onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\"verification-empty\" style=\"padding:30px;\"><i class=\"fa-solid fa-image\"></i><div>Profile picture could not be loaded.</div></div>';"
-                              />
-                            `
-                            : `
-                              <div class="verification-empty" style="padding:30px;">
-                                <i class="fa-solid fa-user"></i>
-                                <div>No profile picture available.</div>
-                              </div>
-                            `
-                        }
-
-                      </div>
-
-                      <div class="verification-date">
-                        <i class="fa-regular fa-calendar"></i>
-                        Submitted:
-                        ${formatDate(submittedValue)}
-                      </div>
-
-                    </section>
-
-                  </div>
-
-                  <div class="verification-card-actions">
-
-                    <button
-                      class="btn btn-success"
-                      type="button"
-                      onclick="approveVerification('${requestId}')"
-                    >
-                      <i class="fa-solid fa-check"></i>
-                      Approve & Verify
-                    </button>
-
-                    <button
-                      class="btn btn-danger"
-                      type="button"
-                      onclick="rejectVerification('${requestId}')"
-                    >
-                      <i class="fa-solid fa-xmark"></i>
-                      Reject
-                    </button>
-
-                  </div>
-
-                </article>
-              `;
-            }
+            (request) =>
+              verificationCardHtml(request)
           )
           .join("");
+
+      verificationHasRendered = true;
 
       scheduleVerificationVideoPrefetch();
     }
@@ -6657,148 +7071,557 @@
        - Loads videos automatically ONE BY ONE.
        - Never calls play().
        - User must press the native Play button.
+       - Existing video elements survive realtime updates.
     =========================================================== */
 
     let verificationVideoQueueToken = 0;
 
+
     function scheduleVerificationVideoPrefetch() {
-      const token = ++verificationVideoQueueToken;
-      const videos = Array.from(
-        document.querySelectorAll(
-          '#verificationTable video[data-video-src]'
-        )
-      );
+
+      const token =
+        ++verificationVideoQueueToken;
+
+      const videos =
+        Array.from(
+          document.querySelectorAll(
+            "#verificationTable video[data-video-src]"
+          )
+        );
 
       if (!videos.length) return;
 
-      const loadNext = (index) => {
-        if (token !== verificationVideoQueueToken) return;
-        if (index >= videos.length) return;
+      const loadNext =
+        (index) => {
 
-        const video = videos[index];
-        if (!video) {
-          loadNext(index + 1);
-          return;
-        }
+          if (
+            token !==
+            verificationVideoQueueToken
+          ) {
+            return;
+          }
 
-        const encodedId =
-          video.id.replace('verification-video-', '');
+          if (
+            index >=
+            videos.length
+          ) {
+            return;
+          }
 
-        const start = () => {
-          if (token !== verificationVideoQueueToken) return;
+          const video =
+            videos[index];
 
-          const src = video.dataset.videoSrc;
-          if (!src || video.dataset.sourceLoaded === '1') {
+          if (!video) {
             loadNext(index + 1);
             return;
           }
 
-          video.dataset.sourceLoaded = '1';
-          video.preload = 'auto';
-          video.src = src;
-          video.load();
+          const start =
+            () => {
 
-          let advanced = false;
-          const advance = () => {
-            if (advanced) return;
-            advanced = true;
-            video.classList.add('is-ready');
-            loadNext(index + 1);
-          };
+              if (
+                token !==
+                verificationVideoQueueToken
+              ) {
+                return;
+              }
 
-          video.addEventListener('canplay', advance, { once: true });
-          video.addEventListener('loadedmetadata', () => {
-            video.classList.add('is-ready');
-          }, { once: true });
-          video.addEventListener('error', () => {
-            advance();
-          }, { once: true });
+              /*
+               * If this video is already loaded, skip it without
+               * touching src/load/playback state.
+               */
+              const src =
+                video.dataset.videoSrc;
 
-          /* Safety fallback: if a browser does not emit canplay quickly,
-             allow the next queued video to begin after metadata loads. */
-          setTimeout(() => {
-            if (!advanced && video.readyState >= 1) {
-              advance();
-            }
-          }, 5000);
+              if (
+                !src ||
+                video.dataset.sourceLoaded === "1"
+              ) {
+                loadNext(index + 1);
+                return;
+              }
+
+              video.dataset.sourceLoaded =
+                "1";
+
+              video.preload =
+                "auto";
+
+              video.src =
+                src;
+
+              video.load();
+
+              let advanced =
+                false;
+
+              const advance =
+                () => {
+
+                  if (advanced) {
+                    return;
+                  }
+
+                  advanced = true;
+
+                  video.classList.add(
+                    "is-ready"
+                  );
+
+                  loadNext(index + 1);
+                };
+
+              video.addEventListener(
+                "canplay",
+                advance,
+                { once: true }
+              );
+
+              video.addEventListener(
+                "loadedmetadata",
+                () => {
+                  video.classList.add(
+                    "is-ready"
+                  );
+                },
+                { once: true }
+              );
+
+              video.addEventListener(
+                "error",
+                () => {
+                  advance();
+                },
+                { once: true }
+              );
+
+              setTimeout(
+                () => {
+                  if (
+                    !advanced &&
+                    video.readyState >= 1
+                  ) {
+                    advance();
+                  }
+                },
+                5000
+              );
+            };
+
+          requestAnimationFrame(
+            start
+          );
         };
-
-        /* Give the browser a frame before starting each next request. */
-        requestAnimationFrame(start);
-      };
 
       loadNext(0);
     }
 
-    window.handleVerificationVideoLoaded = function(encodedId) {
-      const id = decodeURIComponent(encodedId);
-      const video = $('verification-video-' + id);
-      const errorBox = $('verification-video-error-' + id);
-      if (video) video.classList.add('is-ready');
-      if (errorBox) errorBox.style.display = 'none';
-    };
 
-    window.handleVerificationVideoReady = function(encodedId) {
-      const id = decodeURIComponent(encodedId);
-      const video = $('verification-video-' + id);
-      const errorBox = $('verification-video-error-' + id);
-      if (video) video.classList.add('is-ready');
-      if (errorBox) errorBox.style.display = 'none';
-    };
+    window.handleVerificationVideoLoaded =
+      function(encodedId) {
 
-    window.ensureVerificationVideoSource = function(encodedId) {
-      const id = decodeURIComponent(encodedId);
-      const video = $('verification-video-' + id);
-      if (!video) return;
+        const id =
+          decodeURIComponent(
+            encodedId
+          );
 
-      const src = video.dataset.videoSrc;
-      if (!src) return;
+        const video =
+          $("verification-video-" + id);
 
-      if (video.dataset.sourceLoaded !== '1') {
-        video.dataset.sourceLoaded = '1';
-        video.preload = 'auto';
-        video.src = src;
-        video.load();
+        const errorBox =
+          $("verification-video-error-" + id);
+
+        if (video) {
+          video.classList.add(
+            "is-ready"
+          );
+        }
+
+        if (errorBox) {
+          errorBox.style.display =
+            "none";
+        }
+      };
+
+
+    window.handleVerificationVideoReady =
+      function(encodedId) {
+
+        const id =
+          decodeURIComponent(
+            encodedId
+          );
+
+        const video =
+          $("verification-video-" + id);
+
+        const errorBox =
+          $("verification-video-error-" + id);
+
+        if (video) {
+          video.classList.add(
+            "is-ready"
+          );
+        }
+
+        if (errorBox) {
+          errorBox.style.display =
+            "none";
+        }
+      };
+
+
+    window.ensureVerificationVideoSource =
+      function(encodedId) {
+
+        const id =
+          decodeURIComponent(
+            encodedId
+          );
+
+        const video =
+          $("verification-video-" + id);
+
+        if (!video) return;
+
+        const src =
+          video.dataset.videoSrc;
+
+        if (!src) return;
+
+        if (
+          video.dataset.sourceLoaded !== "1"
+        ) {
+          video.dataset.sourceLoaded =
+            "1";
+
+          video.preload =
+            "auto";
+
+          video.src =
+            src;
+
+          video.load();
+        }
+      };
+
+
+    window.showVerificationVideoError =
+      function(encodedId) {
+
+        const id =
+          decodeURIComponent(
+            encodedId
+          );
+
+        const errorBox =
+          $("verification-video-error-" + id);
+
+        if (errorBox) {
+          errorBox.style.display =
+            "block";
+        }
+      };
+
+
+    window.retryVerificationVideo =
+      function(encodedId) {
+
+        const id =
+          decodeURIComponent(
+            encodedId
+          );
+
+        const video =
+          $("verification-video-" + id);
+
+        const errorBox =
+          $("verification-video-error-" + id);
+
+        if (!video) return;
+
+        if (errorBox) {
+          errorBox.style.display =
+            "none";
+        }
+
+        const src =
+          video.dataset.videoSrc;
+
+        if (!src) return;
+
+        try {
+
+          video.pause();
+
+          video.removeAttribute(
+            "src"
+          );
+
+          video.load();
+
+          video.dataset.sourceLoaded =
+            "0";
+
+          video.classList.remove(
+            "is-ready"
+          );
+
+          video.preload =
+            "auto";
+
+          video.src =
+            src;
+
+          video.dataset.sourceLoaded =
+            "1";
+
+          video.load();
+
+        } catch (error) {
+
+          console.error(
+            "retryVerificationVideo:",
+            error
+          );
+        }
+      };
+
+
+    window.openVerificationVideo =
+      function(encodedUrl) {
+
+        const url =
+          decodeURIComponent(
+            encodedUrl
+          );
+
+        if (!url) return;
+
+        window.open(
+          url,
+          "_blank",
+          "noopener,noreferrer"
+        );
+      };
+
+
+    async function processVerificationAction(
+      id,
+      decision
+    ) {
+
+      if (
+        verificationActionInFlight.has(id)
+      ) {
+        return;
       }
-    };
 
-    window.showVerificationVideoError = function(encodedId) {
-      const id = decodeURIComponent(encodedId);
-      const errorBox = $('verification-video-error-' + id);
-      if (errorBox) errorBox.style.display = 'block';
-    };
+      const request =
+        verificationRequests.find(
+          (item) =>
+            item.id === id
+        );
 
-    window.retryVerificationVideo = function(encodedId) {
-      const id = decodeURIComponent(encodedId);
-      const video = $('verification-video-' + id);
-      const errorBox = $('verification-video-error-' + id);
-      if (!video) return;
+      if (!request) {
+        showToast(
+          "Verification request not found.",
+          "error"
+        );
+        return;
+      }
 
-      if (errorBox) errorBox.style.display = 'none';
+      if (
+        getVerificationStatus(request) !==
+        "pending"
+      ) {
+        removeVerificationCard(id);
+        updateVerificationCount();
+        return;
+      }
 
-      const src = video.dataset.videoSrc;
-      if (!src) return;
+      verificationActionInFlight.add(
+        id
+      );
+
+      const previousStatus =
+        request.status ||
+        "pending";
+
+      /*
+       * Optimistic UI:
+       * remove this card immediately so the next verification is visible
+       * without waiting for Firestore or rebuilding the entire queue.
+       */
+      request.status =
+        decision;
+
+      removeVerificationCard(id);
+      updateVerificationCount();
+
+      /*
+       * Re-scan the remaining queue after removing one card.
+       * Already-loaded videos are skipped without changing their src/load state.
+       */
+      scheduleVerificationVideoPrefetch();
 
       try {
-        video.pause();
-        video.removeAttribute('src');
-        video.load();
-        video.dataset.sourceLoaded = '0';
-        video.classList.remove('is-ready');
 
-        video.preload = 'auto';
-        video.src = src;
-        video.dataset.sourceLoaded = '1';
-        video.load();
+        const batch =
+          writeBatch(db);
+
+        const requestRef =
+          doc(
+            db,
+            "verification_requests",
+            id
+          );
+
+        batch.update(
+          requestRef,
+          {
+            status:
+              decision,
+            reviewedAt:
+              Timestamp.now(),
+            reviewedBy:
+              currentUser.uid
+          }
+        );
+
+        /*
+         * Approving the request also marks the user verified.
+         * Batch commit keeps these two changes atomic.
+         */
+        if (
+          decision === "approved" &&
+          request.uid
+        ) {
+
+          const userRef =
+            doc(
+              db,
+              "users",
+              request.uid
+            );
+
+          batch.update(
+            userRef,
+            {
+              isVerified:
+                true
+            }
+          );
+        }
+
+        await batch.commit();
+
+        const currentRequest =
+          verificationRequests.find(
+            (item) =>
+              item.id === id
+          );
+
+        if (currentRequest) {
+          currentRequest.status = decision;
+          currentRequest.reviewedAt = Timestamp.now();
+          currentRequest.reviewedBy = currentUser.uid;
+        }
+
+        if (
+          decision === "approved" &&
+          request.uid
+        ) {
+          updateLocalUser(
+            request.uid,
+            {
+              isVerified:
+                true
+            }
+          );
+
+          renderUsersTable();
+          renderRecentUsers();
+        }
+
+        writeCache(
+          "verification",
+          verificationRequests.slice(
+            0,
+            1000
+          )
+        );
+
+        showToast(
+          decision === "approved"
+            ? "Verification approved."
+            : "Verification rejected."
+        );
+
       } catch (error) {
-        console.error('retryVerificationVideo:', error);
-      }
-    };
 
-    window.openVerificationVideo = function(encodedUrl) {
-      const url = decodeURIComponent(encodedUrl);
-      window.open(url, '_blank', 'noopener,noreferrer');
-    };
+        console.error(
+          "processVerificationAction:",
+          error
+        );
+
+        /*
+         * Restore the request/card if Firestore failed.
+         */
+        request.status =
+          previousStatus;
+
+        const currentRequest =
+          verificationRequests.find(
+            (item) =>
+              item.id === id
+          );
+
+        if (currentRequest) {
+          currentRequest.status =
+            previousStatus;
+        }
+
+        if (
+          getVerificationStatus(request) ===
+          "pending"
+        ) {
+          appendVerificationCard(
+            request
+          );
+
+          scheduleVerificationVideoPrefetch();
+        }
+
+        writeCache(
+          "verification",
+          verificationRequests.slice(
+            0,
+            1000
+          )
+        );
+
+        showToast(
+          decision === "approved"
+            ? "Failed to approve verification: " + (
+                error.message || ""
+              )
+            : "Failed to reject verification: " + (
+                error.message || ""
+              ),
+          "error"
+        );
+
+      } finally {
+
+        verificationActionInFlight.delete(
+          id
+        );
+
+        updateVerificationCount();
+      }
+    }
+
 
     window.approveVerification =
       function(encodedId) {
@@ -6808,100 +7631,10 @@
             encodedId
           );
 
-
-        openConfirmModal(
-          "Approve Verification",
-          "Approve this user's video verification?",
-          async () => {
-
-            try {
-
-              await updateDoc(
-                doc(
-                  db,
-                  "verification_requests",
-                  id
-                ),
-                {
-                  status:
-                    "approved",
-                  reviewedAt:
-                    Timestamp.now(),
-                  reviewedBy:
-                    currentUser.uid
-                }
-              );
-
-
-              const request =
-                verificationRequests
-                  .find(
-                    (item) =>
-                      item.id === id
-                  );
-
-
-              if (request) {
-
-                request.status =
-                  "approved";
-
-              }
-
-
-              if (request?.uid) {
-
-                await updateDoc(
-                  doc(
-                    db,
-                    "users",
-                    request.uid
-                  ),
-                  {
-                    isVerified:
-                      true
-                  }
-                );
-
-
-                updateLocalUser(
-                  request.uid,
-                  {
-                    isVerified:
-                      true
-                  }
-                );
-
-              }
-
-
-              writeCache("verification", verificationRequests.slice(0, 1000));
-              renderVerificationTable();
-
-              renderUsersTable();
-
-              renderRecentUsers();
-
-
-              showToast(
-                "Verification approved."
-              );
-
-            } catch (error) {
-
-              console.error(error);
-
-              showToast(
-                "Failed to approve verification: " +
-                error.message,
-                "error"
-              );
-
-            }
-
-          }
+        processVerificationAction(
+          id,
+          "approved"
         );
-
       };
 
 
@@ -6913,77 +7646,21 @@
             encodedId
           );
 
-
-        openConfirmModal(
-          "Reject Verification",
-          "Reject this verification request?",
-          async () => {
-
-            try {
-
-              await updateDoc(
-                doc(
-                  db,
-                  "verification_requests",
-                  id
-                ),
-                {
-                  status:
-                    "rejected",
-                  reviewedAt:
-                    Timestamp.now(),
-                  reviewedBy:
-                    currentUser.uid
-                }
-              );
-
-
-              const request =
-                verificationRequests
-                  .find(
-                    (item) =>
-                      item.id === id
-                  );
-
-
-              if (request) {
-
-                request.status =
-                  "rejected";
-
-              }
-
-
-              writeCache("verification", verificationRequests.slice(0, 1000));
-              renderVerificationTable();
-
-
-              showToast(
-                "Verification rejected."
-              );
-
-            } catch (error) {
-
-              console.error(error);
-
-              showToast(
-                "Failed to reject verification: " +
-                error.message,
-                "error"
-              );
-
-            }
-
-          }
+        processVerificationAction(
+          id,
+          "rejected"
         );
-
       };
 
 
     $("refreshVerificationButton")
       .addEventListener(
         "click",
-        loadVerificationRequests
+        () => {
+          loadVerificationRequests({
+            silent: true
+          });
+        }
       );
 
 
