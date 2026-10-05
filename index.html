@@ -821,6 +821,48 @@
       color: var(--muted);
     }
 
+    .table-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 12px 14px;
+      border-top: 1px solid var(--border);
+      background: #fbfcfe;
+    }
+
+    .table-footer-info {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .load-more-button {
+      min-width: 130px;
+    }
+
+    .soft-loading {
+      opacity: .62;
+      pointer-events: none;
+    }
+
+    .inline-progress {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .card-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+
     /* =========================================================
        TOOLBAR
     ========================================================== */
@@ -2243,7 +2285,7 @@
                 <div class="card-header">
                   <div>
                     <h3>User Growth</h3>
-                    <span>Last 30 days</span>
+                    <span>Last 30 days · cached sample</span>
                   </div>
                 </div>
 
@@ -2473,6 +2515,20 @@
 
               </div>
 
+              <div class="table-footer" id="usersTableFooter">
+                <div class="table-footer-info" id="usersPageInfo">
+                  Showing 0 users
+                </div>
+                <button
+                  id="loadMoreUsersButton"
+                  class="btn btn-outline btn-sm load-more-button"
+                  type="button"
+                  disabled
+                >
+                  Load More
+                </button>
+              </div>
+
             </div>
 
           </div>
@@ -2593,6 +2649,20 @@
 
                 </table>
 
+              </div>
+
+              <div class="table-footer" id="reportsTableFooter">
+                <div class="table-footer-info" id="reportsPageInfo">
+                  Showing 0 reports
+                </div>
+                <button
+                  id="loadMoreReportsButton"
+                  class="btn btn-outline btn-sm load-more-button"
+                  type="button"
+                  disabled
+                >
+                  Load More
+                </button>
               </div>
 
             </div>
@@ -3379,7 +3449,9 @@
       orderBy,
       limit,
       where,
-      Timestamp
+      Timestamp,
+      documentId,
+      startAfter
     } from
       "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -3439,6 +3511,7 @@
     let allUsers = [];
 
     let filteredUsers = [];
+    let recentUsers = [];
 
     let reports = [];
 
@@ -3471,6 +3544,7 @@
     let currentModalUid = null;
 
     let confirmCallback = null;
+    let confirmActionButtonBusy = false;
 
     let userGrowthChart = null;
 
@@ -3481,6 +3555,36 @@
     let imageOffsetX = 0;
 
     let imageOffsetY = 0;
+
+    // ============================================================
+    // PERFORMANCE STATE
+    // ============================================================
+    const USER_PAGE_SIZE = 40;
+    const USER_CACHE_LIMIT = 120;
+    const REPORT_PAGE_SIZE = 40;
+    const REPORT_CACHE_LIMIT = 120;
+    const ACTION_TIMEOUT_MS = 12000;
+
+    let userPageCursor = null;
+    let userHasMore = true;
+    let usersLoading = false;
+    let usersInitialized = false;
+    let userTotalCount = null;
+
+    let reportPageCursor = null;
+    let reportHasMore = true;
+    let reportsLoading = false;
+    let reportsInitialized = false;
+    let reportTotalCount = null;
+
+    let dashboardInitialized = false;
+    let dashboardActiveCountLoaded = false;
+    let configInitialized = false;
+
+    const reportUserCache = new Map();
+    const reportUserFetchInFlight = new Set();
+
+    let filterSearchTimer = null;
 
 
     /* ==========================================================
@@ -3526,6 +3630,37 @@
       setTimeout(() => {
         toast.remove();
       }, 3500);
+    }
+
+
+    async function withTimeout(
+      promise,
+      milliseconds = ACTION_TIMEOUT_MS,
+      timeoutMessage = "The request took too long. Check your connection and try again."
+    ) {
+
+      let timer = null;
+
+      try {
+
+        return await Promise.race([
+          promise,
+          new Promise((_, reject) => {
+            timer = setTimeout(
+              () => reject(new Error(timeoutMessage)),
+              milliseconds
+            );
+          })
+        ]);
+
+      } finally {
+
+        if (timer) {
+          clearTimeout(timer);
+        }
+
+      }
+
     }
 
 
@@ -3973,7 +4108,7 @@
 
 
     window.showPage =
-      async function(page) {
+      function(page) {
 
         const appShell =
           document.querySelector(".app-shell");
@@ -4013,36 +4148,32 @@
           pageMeta[page];
 
         if (meta) {
-
-          $("pageTitle")
-            .textContent =
-            meta.title;
-
-          $("pageSubtitle")
-            .textContent =
-            meta.subtitle;
+          $("pageTitle").textContent = meta.title;
+          $("pageSubtitle").textContent = meta.subtitle;
         }
 
         closeSidebarMobile();
 
-        if (page === "users") {
-          await loadUsers();
+        // Do not block navigation while data is being fetched.
+        if (page === "users" && !usersInitialized && !usersLoading) {
+          void loadUsers({ reset: true });
         }
 
-        if (page === "reports") {
-          await loadReports();
+        if (page === "reports" && !reportsInitialized && !reportsLoading) {
+          void loadReports({ reset: true });
         }
 
         if (page === "verification" && !verificationHasRendered) {
-          await loadVerificationRequests();
+          void loadVerificationRequests();
         }
 
-        if (page === "config") {
-          await loadAppConfig();
+        if (page === "config" && !configInitialized) {
+          void loadAppConfig({ silent: hydrateAppConfigCache() });
         }
 
-        if (page === "dashboard") {
-          await refreshDashboard();
+        if (page === "dashboard" && !dashboardInitialized) {
+          dashboardInitialized = true;
+          void refreshDashboard({ silent: true });
         }
 
       };
@@ -4240,29 +4371,46 @@
 
     async function initializeAdmin() {
 
+      // Never wait for large collections before showing the admin UI.
+      // Cached content is painted first; Firebase work continues silently.
       const hasUsers = hydrateUsersCache();
       const hasReports = hydrateReportsCache();
       const hasVerification = hydrateVerificationCache();
       const hasConfig = hydrateAppConfigCache();
 
-      // Cached data appears immediately. Firebase refreshes silently afterwards.
-      await Promise.allSettled([
-        loadUsers({ silent: hasUsers }),
-        loadReports({ silent: hasReports }),
-        loadVerificationRequests({ silent: hasVerification }),
-        loadTotalPendingVerificationCount(),
-        loadAppConfig({ silent: hasConfig }),
-        loadAnnouncements()
-      ]);
+      // Cache is for instant painting only. The page still fetches a fresh
+      // first page when the admin opens Users/Reports.
+      usersInitialized = false;
+      reportsInitialized = false;
+      configInitialized = hasConfig;
+      dashboardInitialized = true;
 
-      await refreshDashboard();
-      renderCharts();
+      showSyncStatus("Connecting…");
 
-      // Keep the verification queue live while the admin panel is open.
+      // Small, independent tasks. None of these blocks navigation.
+      void refreshDashboard({ silent: true });
+      void loadRecentUsers({ silent: true });
+      void loadTotalPendingVerificationCount();
+      void loadAppConfig({ silent: hasConfig });
+      void loadAnnouncements();
+
+      // Verification realtime is limited to the pending queue only.
       startVerificationRequestsRealtime();
+
+      // Do not pre-load the entire Users/Reports collections.
+      // Their first page is fetched only when the admin opens the page.
+      if (hasUsers) {
+        updateUsersPaginationUi();
+      }
+      if (hasReports) {
+        updateReportsPaginationUi();
+      }
+
     }
 
 
+    /* ==========================================================
+       PERSISTENT CACHE / SILENT REFRESH
     /* ==========================================================
        PERSISTENT CACHE / SILENT REFRESH
     =========================================================== */
@@ -4338,76 +4486,154 @@
     }
 
     function hydrateUsersCache() {
+
       const entry = readCache("users");
-      if (!entry || !Array.isArray(entry.data)) return false;
-      allUsers = entry.data;
+
+      if (!entry || !Array.isArray(entry.data)) {
+        return false;
+      }
+
+      // Older versions could cache thousands of users and make startup
+      // itself slow. Keep only a small, useful local warm cache.
+      allUsers = entry.data.slice(0, USER_CACHE_LIMIT);
+
       applyUserFilters();
       renderRecentUsers();
       updateUserStats();
-      return true;
+      return allUsers.length > 0;
+
     }
 
+
     function hydrateReportsCache() {
+
       const entry = readCache("reports");
-      if (!entry || !Array.isArray(entry.data)) return false;
-      reports = entry.data;
+
+      if (!entry || !Array.isArray(entry.data)) {
+        return false;
+      }
+
+      reports = entry.data.slice(0, REPORT_CACHE_LIMIT);
       groupReports();
       renderReportsTable();
       updateReportStats();
-      return true;
+      return reports.length > 0;
+
     }
 
-    function hydrateVerificationCache() {
-      const entry = readCache("verification");
-      if (!entry || !Array.isArray(entry.data)) return false;
 
-      verificationRequests = entry.data
-        .filter(
-          (request) =>
-            getVerificationStatus(request) === "pending"
-        )
-        .slice(0, VERIFICATION_QUERY_LIMIT);
-
-      verificationVisibleLimit = VERIFICATION_RENDER_LIMIT;
-      renderVerificationTable();
-      verificationHasRendered = true;
-      return verificationRequests.length > 0;
-    }
-
-    function hydrateAppConfigCache() {
-      const entry = readCache("app_config");
-      if (!entry || !entry.data) return false;
-      fillAppConfig(entry.data);
-      return true;
-    }
-
+    /* ==========================================================
+       USERS
     /* ==========================================================
        USERS
     =========================================================== */
 
-    async function loadUsers({ silent = false } = {}) {
+    async function refreshUserTotalCount() {
 
-      if (!silent) {
-        $("allUsersTable").innerHTML = `
-          <tr>
-            <td colspan="7" class="loading-row">
-              <i class="fa-solid fa-spinner fa-spin"></i>
-              Loading users...
-            </td>
-          </tr>
+      try {
+        const countSnapshot =
+          await getCountFromServer(collection(db, "users"));
+
+        userTotalCount = countSnapshot.data().count;
+
+        $("statTotalUsers").textContent =
+          Number(userTotalCount).toLocaleString();
+
+        updateUsersPaginationUi();
+
+      } catch (error) {
+        console.warn("User count:", error);
+
+        if (userTotalCount === null) {
+          $("statTotalUsers").textContent =
+            allUsers.length.toLocaleString();
+        }
+      }
+
+    }
+
+
+    async function loadUsers({
+      reset = true,
+      silent = false
+    } = {}) {
+
+      if (usersLoading) {
+        return;
+      }
+
+      if (
+        !reset &&
+        !userHasMore
+      ) {
+        return;
+      }
+
+      usersLoading = true;
+
+      const button =
+        $("loadMoreUsersButton");
+
+      const refreshButton =
+        $("refreshUsersButton");
+
+      if (reset) {
+        userPageCursor = null;
+        userHasMore = true;
+
+        if (!silent && !allUsers.length) {
+          $("allUsersTable").innerHTML = `
+            <tr>
+              <td colspan="7" class="loading-row">
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                Loading first page...
+              </td>
+            </tr>
+          `;
+        } else {
+          showSyncStatus("Refreshing users…");
+          $("allUsersTable").classList.add("soft-loading");
+        }
+      } else if (button) {
+        button.disabled = true;
+        button.innerHTML = `
+          <i class="fa-solid fa-spinner fa-spin"></i>
+          Loading…
         `;
-      } else {
-        showSyncStatus("Refreshing users…");
+      }
+
+      if (refreshButton) {
+        refreshButton.disabled = true;
       }
 
       try {
 
+        // Pagination by document ID avoids depending on optional fields
+        // such as createdAt and does not require a composite index.
+        const constraints = [
+          orderBy(documentId()),
+          limit(USER_PAGE_SIZE)
+        ];
+
+        if (userPageCursor) {
+          constraints.splice(
+            1,
+            0,
+            startAfter(userPageCursor)
+          );
+        }
+
         const snapshot =
           await getDocs(
-            collection(db, "users")
+            query(
+              collection(db, "users"),
+              ...constraints
+            )
           );
 
-        allUsers = [];
+        if (reset) {
+          allUsers = [];
+        }
 
         snapshot.forEach(
           (documentSnapshot) => {
@@ -4425,15 +4651,36 @@
           }
         );
 
+        userPageCursor =
+          snapshot.docs.length
+            ? snapshot.docs[snapshot.docs.length - 1]
+            : userPageCursor;
 
-        saveUsersCache();
-        writeCache("users", allUsers.slice(0, 5000).map(compactUserForCache));
+        userHasMore =
+          snapshot.docs.length === USER_PAGE_SIZE;
+
+        usersInitialized = true;
 
         applyUserFilters();
-
         renderRecentUsers();
-
         updateUserStats();
+
+        writeCache(
+          "users",
+          allUsers
+            .slice(0, USER_CACHE_LIMIT)
+            .map(compactUserForCache)
+        );
+
+        saveUsersCache();
+
+        // Count is lightweight and does not download user documents.
+        if (
+          reset &&
+          userTotalCount === null
+        ) {
+          void refreshUserTotalCount();
+        }
 
       } catch (error) {
 
@@ -4442,30 +4689,49 @@
           error
         );
 
-        if (!silent) {
+        if (!allUsers.length) {
           $("allUsersTable").innerHTML = `
             <tr>
               <td colspan="7">
                 <div class="empty-state">
                   <i class="fa-solid fa-triangle-exclamation"></i>
-                  <div>
-                    Failed to load users.
-                  </div>
-                  <small>
-                    ${escapeHtml(error.message)}
-                  </small>
+                  <div>Failed to load users.</div>
+                  <small>${escapeHtml(error.message)}</small>
                 </div>
               </td>
             </tr>
           `;
-          showToast(
-            "Failed to load users.",
-            "error"
-          );
         }
 
+        showToast(
+          "Could not load users: " +
+          error.message,
+          "error"
+        );
+
       } finally {
+
+        usersLoading = false;
+
+        $("allUsersTable")
+          .classList
+          .remove("soft-loading");
+
+        if (refreshButton) {
+          refreshButton.disabled = false;
+        }
+
+        if (button) {
+          button.disabled = !userHasMore;
+          button.innerHTML = `
+            <i class="fa-solid fa-plus"></i>
+            ${userHasMore ? "Load More" : "All Loaded"}
+          `;
+        }
+
         hideSyncStatus();
+        updateUsersPaginationUi();
+
       }
 
     }
@@ -4475,14 +4741,69 @@
 
       try {
 
+        // Keep the legacy cache tiny too, so old versions cannot leave a
+        // multi-megabyte startup payload behind.
         localStorage.setItem(
           "masoya_admin_users_cache",
           JSON.stringify(
-            allUsers.slice(0, 1000)
+            allUsers
+              .slice(0, USER_CACHE_LIMIT)
+              .map(compactUserForCache)
           )
         );
 
       } catch (_) {}
+
+    }
+
+
+    function updateUsersPaginationUi() {
+
+      const info =
+        $("usersPageInfo");
+
+      const button =
+        $("loadMoreUsersButton");
+
+      const shown =
+        filteredUsers.length;
+
+      const loaded =
+        allUsers.length;
+
+      const total =
+        Number.isFinite(userTotalCount)
+          ? Number(userTotalCount)
+          : null;
+
+      if (info) {
+
+        info.textContent =
+          total !== null
+            ? `Loaded ${loaded.toLocaleString()} of ${total.toLocaleString()} users`
+            : `Loaded ${loaded.toLocaleString()} user${loaded === 1 ? "" : "s"}`;
+
+      }
+
+      if (button) {
+        button.disabled =
+          usersLoading ||
+          !userHasMore;
+
+        if (!usersLoading) {
+          button.innerHTML = `
+            <i class="fa-solid fa-plus"></i>
+            ${userHasMore ? "Load More" : "All Loaded"}
+          `;
+        }
+      }
+
+      if ($("userCountLabel")) {
+        $("userCountLabel").textContent =
+          total !== null
+            ? `${shown.toLocaleString()} shown · ${total.toLocaleString()} total`
+            : `${shown.toLocaleString()} loaded`;
+      }
 
     }
 
@@ -4492,12 +4813,7 @@
       let result =
         [...allUsers];
 
-
-      /* SEARCH */
-
-      if (
-        currentUserSearch
-      ) {
+      if (currentUserSearch) {
 
         const search =
           currentUserSearch
@@ -4508,30 +4824,19 @@
             (user) => {
 
               const values = [
-
                 getUserName(user),
-
                 getUserEmail(user),
-
                 user.uid,
-
                 user.gender,
-
                 getUserLocation(user),
-
                 user.city,
-
                 user.state,
-
                 user.country
-
               ];
 
               return values.some(
                 (value) =>
-                  String(
-                    value || ""
-                  )
+                  String(value || "")
                     .toLowerCase()
                     .includes(search)
               );
@@ -4541,23 +4846,14 @@
 
       }
 
-
-      /* FILTER */
-
-      if (
-        currentUserFilter ===
-        "premium"
-      ) {
+      if (currentUserFilter === "premium") {
 
         result =
           result.filter(
             isPremiumUser
           );
 
-      } else if (
-        currentUserFilter ===
-        "normal"
-      ) {
+      } else if (currentUserFilter === "normal") {
 
         result =
           result.filter(
@@ -4567,11 +4863,10 @@
 
       }
 
-
-      filteredUsers =
-        result;
+      filteredUsers = result;
 
       renderUsersTable();
+      updateUsersPaginationUi();
 
     }
 
@@ -4581,14 +4876,7 @@
       const tbody =
         $("allUsersTable");
 
-      $("userCountLabel")
-        .textContent =
-        `${filteredUsers.length} user${
-          filteredUsers.length === 1
-            ? ""
-            : "s"
-        }`;
-
+      updateUsersPaginationUi();
 
       if (!filteredUsers.length) {
 
@@ -4598,8 +4886,13 @@
               <div class="empty-state">
                 <i class="fa-solid fa-users-slash"></i>
                 <div>
-                  No users found.
+                  ${currentUserSearch || currentUserFilter !== "all"
+                    ? "No loaded users match this filter."
+                    : "No users found."}
                 </div>
+                <small>
+                  ${userHasMore ? "Use Load More to search further." : "There are no more users to load."}
+                </small>
               </div>
             </td>
           </tr>
@@ -4608,33 +4901,20 @@
         return;
       }
 
-
       const sorted =
-        [...filteredUsers]
-          .sort(
+        [...filteredUsers].sort(
+          (a, b) =>
             (
-              a,
-              b
-            ) => {
-
-              const ad =
-                toDate(
-                  getLastActive(a)
-                );
-
-              const bd =
-                toDate(
-                  getLastActive(b)
-                );
-
-              return (
-                (bd?.getTime() || 0) -
-                (ad?.getTime() || 0)
-              );
-
-            }
-          );
-
+              toDate(
+                getLastActive(b)
+              )?.getTime() || 0
+            ) -
+            (
+              toDate(
+                getLastActive(a)
+              )?.getTime() || 0
+            )
+        );
 
       tbody.innerHTML =
         sorted
@@ -4646,7 +4926,6 @@
 
               return `
                 <tr>
-
                   <td>
                     ${userCellHtml(user)}
                   </td>
@@ -4679,9 +4958,7 @@
                   </td>
 
                   <td>
-
                     <div class="actions">
-
                       <button
                         class="btn btn-outline btn-sm"
                         onclick="viewProfile('${encodeURIComponent(uid)}')"
@@ -4705,11 +4982,8 @@
                         <i class="fa-solid fa-ban"></i>
                         Block
                       </button>
-
                     </div>
-
                   </td>
-
                 </tr>
               `;
 
@@ -4720,6 +4994,119 @@
     }
 
 
+    async function loadRecentUsers({ silent = true } = {}) {
+
+      try {
+
+        let snapshot;
+
+        try {
+
+          snapshot =
+            await getDocs(
+              query(
+                collection(db, "users"),
+                orderBy("createdAt", "desc"),
+                limit(10)
+              )
+            );
+
+        } catch (orderedError) {
+
+          // Fallback for projects where createdAt is not present yet.
+          console.warn(
+            "Recent users ordered query failed; using lightweight fallback.",
+            orderedError
+          );
+
+          snapshot =
+            await getDocs(
+              query(
+                collection(db, "users"),
+                limit(25)
+              )
+            );
+
+        }
+
+        recentUsers = [];
+
+        snapshot.forEach(
+          (documentSnapshot) => {
+
+            const data =
+              documentSnapshot.data();
+
+            recentUsers.push({
+              ...data,
+              uid:
+                data.uid ||
+                documentSnapshot.id
+            });
+
+          }
+        );
+
+        recentUsers.sort(
+          (a, b) =>
+            (
+              toDate(
+                getLastActive(b)
+              )?.getTime() || 0
+            ) -
+            (
+              toDate(
+                getLastActive(a)
+              )?.getTime() || 0
+            )
+        );
+
+        recentUsers =
+          recentUsers.slice(0, 10);
+
+        renderRecentUsers();
+
+        // Warm only these few users into the local list.
+        const seen = new Set(
+          allUsers.map((user) => user.uid)
+        );
+
+        recentUsers.forEach((user) => {
+          if (!seen.has(user.uid)) {
+            allUsers.push(user);
+          }
+        });
+
+        updateUserStats();
+
+      } catch (error) {
+
+        console.warn(
+          "Recent users:",
+          error
+        );
+
+        if (!silent) {
+          showToast(
+            "Could not refresh recent users.",
+            "warning"
+          );
+        }
+
+      }
+
+    }
+
+
+    function escapeSearchQuery(value) {
+      return String(value || "")
+        .trim()
+        .replace(/[\\"]/g, "");
+    }
+
+
+    /* ==========================================================
+       RECENT USERS
     /* ==========================================================
        RECENT USERS
     =========================================================== */
@@ -4729,16 +5116,33 @@
       const tbody =
         $("recentUsersTable");
 
-      if (!allUsers.length) {
+      const source =
+        recentUsers.length
+          ? recentUsers
+          : [...allUsers]
+              .sort(
+                (a, b) =>
+                  (
+                    toDate(
+                      getLastActive(b)
+                    )?.getTime() || 0
+                  ) -
+                  (
+                    toDate(
+                      getLastActive(a)
+                    )?.getTime() || 0
+                  )
+              )
+              .slice(0, 10);
+
+      if (!source.length) {
 
         tbody.innerHTML = `
           <tr>
             <td colspan="6">
               <div class="empty-state">
                 <i class="fa-solid fa-users"></i>
-                <div>
-                  No users available.
-                </div>
+                <div>No users available.</div>
               </div>
             </td>
           </tr>
@@ -4747,27 +5151,8 @@
         return;
       }
 
-
-      const users =
-        [...allUsers]
-          .sort(
-            (a, b) =>
-              (
-                toDate(
-                  getLastActive(b)
-                )?.getTime() || 0
-              ) -
-              (
-                toDate(
-                  getLastActive(a)
-                )?.getTime() || 0
-              )
-          )
-          .slice(0, 10);
-
-
       tbody.innerHTML =
-        users
+        source
           .map(
             (user) => {
 
@@ -4776,7 +5161,6 @@
 
               return `
                 <tr>
-
                   <td>
                     ${userCellHtml(user)}
                   </td>
@@ -4805,7 +5189,6 @@
                   </td>
 
                   <td>
-
                     <button
                       class="btn btn-outline btn-sm"
                       onclick="viewProfile('${encodeURIComponent(uid)}')"
@@ -4813,7 +5196,6 @@
                       <i class="fa-solid fa-eye"></i>
                       View
                     </button>
-
                   </td>
 
                 </tr>
@@ -4826,6 +5208,8 @@
     }
 
 
+    /* ==========================================================
+       UPDATE GENDER
     /* ==========================================================
        UPDATE GENDER
     =========================================================== */
@@ -4852,12 +5236,14 @@
             );
 
 
-          await updateDoc(
-            userRef,
-            {
-              gender:
-                gender || null
-            }
+          await withTimeout(
+            updateDoc(
+              userRef,
+              {
+                gender:
+                  gender || null
+              }
+            )
           );
 
 
@@ -4928,7 +5314,15 @@
             event.target.value
               .trim();
 
-          applyUserFilters();
+          window.clearTimeout(
+            filterSearchTimer
+          );
+
+          filterSearchTimer =
+            window.setTimeout(
+              () => applyUserFilters(),
+              120
+            );
 
         }
       );
@@ -4974,7 +5368,13 @@
     $("refreshUsersButton")
       .addEventListener(
         "click",
-        loadUsers
+        () => loadUsers({ reset: true })
+      );
+
+    $("loadMoreUsersButton")
+      .addEventListener(
+        "click",
+        () => loadUsers({ reset: false })
       );
 
 
@@ -4986,53 +5386,157 @@
 
       $("statTotalUsers")
         .textContent =
-        allUsers.length
-          .toLocaleString();
+        Number.isFinite(userTotalCount)
+          ? Number(userTotalCount).toLocaleString()
+          : allUsers.length.toLocaleString();
 
-      const activeToday =
-        allUsers.filter(
-          (user) =>
-            isToday(
-              getLastActive(user)
-            )
-        ).length;
+      // Do not scan thousands of downloaded users. The count is exact
+      // whenever the backend has lastActiveAt for active sessions.
+      if (
+        !dashboardActiveCountLoaded &&
+        !allUsers.length
+      ) {
+        $("statActiveToday")
+          .textContent = "—";
+        return;
+      }
 
+      if (!dashboardActiveCountLoaded) {
+        const activeToday =
+          allUsers.filter(
+            (user) =>
+              isToday(
+                getLastActive(user)
+              )
+          ).length;
 
-      $("statActiveToday")
-        .textContent =
-        activeToday.toLocaleString();
+        $("statActiveToday")
+          .textContent =
+          activeToday.toLocaleString();
+      }
 
     }
 
 
     /* ==========================================================
        REPORTS
+    /* ==========================================================
+       REPORTS
     =========================================================== */
 
-    async function loadReports({ silent = false } = {}) {
+    async function refreshReportTotalCount() {
 
-      if (!silent) {
-        $("reportsTable").innerHTML = `
-          <tr>
-            <td colspan="7" class="loading-row">
-              <i class="fa-solid fa-spinner fa-spin"></i>
-              Loading reports...
-            </td>
-          </tr>
+      try {
+
+        const countSnapshot =
+          await getCountFromServer(
+            collection(db, "reports")
+          );
+
+        reportTotalCount =
+          countSnapshot.data().count;
+
+        updateReportsPaginationUi();
+
+      } catch (error) {
+
+        console.warn(
+          "Report count:",
+          error
+        );
+
+      }
+
+    }
+
+
+    async function loadReports({
+      reset = true,
+      silent = false
+    } = {}) {
+
+      if (reportsLoading) {
+        return;
+      }
+
+      if (
+        !reset &&
+        !reportHasMore
+      ) {
+        return;
+      }
+
+      reportsLoading = true;
+
+      const button =
+        $("loadMoreReportsButton");
+
+      const refreshButton =
+        $("refreshReportsButton");
+
+      if (reset) {
+
+        reportPageCursor = null;
+        reportHasMore = true;
+        reportTotalCount = null;
+
+        if (!silent && !reports.length) {
+          $("reportsTable").innerHTML = `
+            <tr>
+              <td colspan="7" class="loading-row">
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                Loading first page...
+              </td>
+            </tr>
+          `;
+        } else {
+          showSyncStatus("Refreshing reports…");
+          $("reportsTable")
+            .classList
+            .add("soft-loading");
+        }
+
+      } else if (button) {
+
+        button.disabled = true;
+        button.innerHTML = `
+          <i class="fa-solid fa-spinner fa-spin"></i>
+          Loading…
         `;
-      } else {
-        showSyncStatus("Refreshing reports…");
+
+      }
+
+      if (refreshButton) {
+        refreshButton.disabled = true;
       }
 
       try {
 
+        const constraints = [
+          orderBy(documentId()),
+          limit(REPORT_PAGE_SIZE)
+        ];
+
+        if (reportPageCursor) {
+          constraints.splice(
+            1,
+            0,
+            startAfter(reportPageCursor)
+          );
+        }
+
         const snapshot =
           await getDocs(
-            collection(db, "reports")
+            query(
+              collection(db, "reports"),
+              ...constraints
+            )
           );
 
-
-        reports = [];
+        if (reset) {
+          reports = [];
+          groupedReports = [];
+        }
 
         snapshot.forEach(
           (documentSnapshot) => {
@@ -5040,21 +5544,37 @@
             reports.push({
               id:
                 documentSnapshot.id,
-
               ...documentSnapshot.data()
-
             });
 
           }
         );
 
+        reportPageCursor =
+          snapshot.docs.length
+            ? snapshot.docs[snapshot.docs.length - 1]
+            : reportPageCursor;
+
+        reportHasMore =
+          snapshot.docs.length === REPORT_PAGE_SIZE;
+
+        reportsInitialized = true;
 
         groupReports();
-        writeCache("reports", reports.slice(0, 5000));
-
         renderReportsTable();
-
         updateReportStats();
+
+        writeCache(
+          "reports",
+          reports.slice(0, REPORT_CACHE_LIMIT)
+        );
+
+        if (
+          reset &&
+          reportTotalCount === null
+        ) {
+          void refreshReportTotalCount();
+        }
 
       } catch (error) {
 
@@ -5063,31 +5583,97 @@
           error
         );
 
-        if (!silent) {
+        if (!reports.length) {
           $("reportsTable").innerHTML = `
             <tr>
               <td colspan="7">
                 <div class="empty-state">
                   <i class="fa-solid fa-triangle-exclamation"></i>
-                  <div>
-                    Failed to load reports.
-                  </div>
-                  <small>
-                    ${escapeHtml(error.message)}
-                  </small>
+                  <div>Failed to load reports.</div>
+                  <small>${escapeHtml(error.message)}</small>
                 </div>
               </td>
             </tr>
           `;
-
-          showToast(
-            "Failed to load reports.",
-            "error"
-          );
         }
 
+        showToast(
+          "Could not load reports: " +
+          error.message,
+          "error"
+        );
+
       } finally {
+
+        reportsLoading = false;
+
+        $("reportsTable")
+          .classList
+          .remove("soft-loading");
+
+        if (refreshButton) {
+          refreshButton.disabled = false;
+        }
+
+        if (button) {
+          button.disabled =
+            !reportHasMore;
+
+          button.innerHTML = `
+            <i class="fa-solid fa-plus"></i>
+            ${reportHasMore ? "Load More" : "All Loaded"}
+          `;
+        }
+
         hideSyncStatus();
+        updateReportsPaginationUi();
+
+      }
+
+    }
+
+
+    function updateReportsPaginationUi() {
+
+      const info =
+        $("reportsPageInfo");
+
+      const button =
+        $("loadMoreReportsButton");
+
+      const loaded =
+        reports.length;
+
+      const loadedGroups =
+        groupedReports.length;
+
+      const total =
+        Number.isFinite(reportTotalCount)
+          ? Number(reportTotalCount)
+          : null;
+
+      if (info) {
+
+        info.textContent =
+          total !== null
+            ? `Loaded ${loaded.toLocaleString()} report records · ${loadedGroups.toLocaleString()} reported users of ${total.toLocaleString()} records`
+            : `Loaded ${loaded.toLocaleString()} report records · ${loadedGroups.toLocaleString()} reported users`;
+
+      }
+
+      if (button) {
+
+        button.disabled =
+          reportsLoading ||
+          !reportHasMore;
+
+        if (!reportsLoading) {
+          button.innerHTML = `
+            <i class="fa-solid fa-plus"></i>
+            ${reportHasMore ? "Load More" : "All Loaded"}
+          `;
+        }
+
       }
 
     }
@@ -5220,15 +5806,106 @@
 
     function getReportUser(uid) {
 
-      return (
+      if (reportUserCache.has(uid)) {
+        return reportUserCache.get(uid);
+      }
+
+      const loaded =
         allUsers.find(
           (user) =>
             user.uid === uid
-        ) || {
-          uid,
-          name: "Unknown User"
-        }
+        );
+
+      if (loaded) {
+        reportUserCache.set(uid, loaded);
+        return loaded;
+      }
+
+      return {
+        uid,
+        name: "Loading user…"
+      };
+
+    }
+
+
+    async function enrichVisibleReportUsers() {
+
+      if (
+        !$("page-reports")?.classList.contains("active")
+      ) {
+        return;
+      }
+
+      const unknownUids =
+        groupedReports
+          .map((group) => group.uid)
+          .filter(Boolean)
+          .filter(
+            (uid) =>
+              !reportUserCache.has(uid) &&
+              !reportUserFetchInFlight.has(uid)
+          )
+          .slice(0, 12);
+
+      if (!unknownUids.length) {
+        return;
+      }
+
+      unknownUids.forEach(
+        (uid) =>
+          reportUserFetchInFlight.add(uid)
       );
+
+      const results =
+        await Promise.allSettled(
+          unknownUids.map(
+            async (uid) => {
+
+              const snapshot =
+                await withTimeout(
+                  getDoc(
+                    doc(
+                      db,
+                      "users",
+                      uid
+                    )
+                  ),
+                  10000
+                );
+
+              if (snapshot.exists()) {
+
+                const user = {
+                  ...snapshot.data(),
+                  uid
+                };
+
+                reportUserCache.set(
+                  uid,
+                  user
+                );
+
+              }
+
+            }
+          )
+        );
+
+      unknownUids.forEach(
+        (uid) =>
+          reportUserFetchInFlight.delete(uid)
+      );
+
+      const updated =
+        results.some(
+          (result) =>
+            result.status === "fulfilled"
+        );
+
+      if (updated) {
+        renderReportsTable();
+      }
 
     }
 
@@ -5328,11 +6005,9 @@
 
       $("reportCountLabel")
         .textContent =
-        `${list.length} reported user${
-          list.length === 1
-            ? ""
-            : "s"
-        }`;
+        reportTotalCount !== null
+          ? `${list.length.toLocaleString()} loaded users · ${reportTotalCount.toLocaleString()} report records`
+          : `${list.length.toLocaleString()} reported user${list.length === 1 ? "" : "s"}`;
 
 
       if (!list.length) {
@@ -5532,6 +6207,10 @@
           )
           .join("");
 
+      // Fill missing user details in the background without delaying
+      // the report table itself.
+      void enrichVisibleReportUsers();
+
     }
 
 
@@ -5548,7 +6227,15 @@
             event.target.value
               .trim();
 
-          renderReportsTable();
+          window.clearTimeout(
+            filterSearchTimer
+          );
+
+          filterSearchTimer =
+            window.setTimeout(
+              () => renderReportsTable(),
+              120
+            );
 
         }
       );
@@ -5557,7 +6244,13 @@
     $("refreshReportsButton")
       .addEventListener(
         "click",
-        loadReports
+        () => loadReports({ reset: true })
+      );
+
+    $("loadMoreReportsButton")
+      .addEventListener(
+        "click",
+        () => loadReports({ reset: false })
       );
 
 
@@ -5924,59 +6617,58 @@
             encodedUid
           );
 
-
         openConfirmModal(
           "Suspend User",
           "Are you sure you want to suspend this user?",
           async () => {
 
+            const suspendedAt =
+              Timestamp.now();
+
             try {
 
-              await updateDoc(
-                doc(
-                  db,
-                  "users",
-                  uid
-                ),
-                {
-                  isSuspended: true,
-                  suspendedAt:
-                    Timestamp.now()
-                }
+              await withTimeout(
+                updateDoc(
+                  doc(
+                    db,
+                    "users",
+                    uid
+                  ),
+                  {
+                    isSuspended: true,
+                    suspendedAt
+                  }
+                )
               );
-
 
               updateLocalUser(
                 uid,
                 {
                   isSuspended: true,
-                  suspendedAt:
-                    Timestamp.now()
+                  suspendedAt
                 }
               );
 
+              renderUsersTable();
+              renderRecentUsers();
+              renderReportsTable();
 
               showToast(
                 "User suspended successfully."
               );
 
-
-              renderUsersTable();
-
-              renderRecentUsers();
-
-              renderReportsTable();
-
               closeUserModal();
 
             } catch (error) {
 
-              console.error(error);
+              console.error(
+                "suspendUser:",
+                error
+              );
 
-              showToast(
+              throw new Error(
                 "Failed to suspend user: " +
-                error.message,
-                "error"
+                error.message
               );
 
             }
@@ -5989,6 +6681,8 @@
 
     /* ==========================================================
        BLOCK USER
+    /* ==========================================================
+       BLOCK USER
     =========================================================== */
 
     window.blockUser =
@@ -5999,59 +6693,58 @@
             encodedUid
           );
 
-
         openConfirmModal(
           "Block User",
           "Are you sure you want to block this user?",
           async () => {
 
+            const blockedAt =
+              Timestamp.now();
+
             try {
 
-              await updateDoc(
-                doc(
-                  db,
-                  "users",
-                  uid
-                ),
-                {
-                  isBlocked: true,
-                  blockedAt:
-                    Timestamp.now()
-                }
+              await withTimeout(
+                updateDoc(
+                  doc(
+                    db,
+                    "users",
+                    uid
+                  ),
+                  {
+                    isBlocked: true,
+                    blockedAt
+                  }
+                )
               );
-
 
               updateLocalUser(
                 uid,
                 {
                   isBlocked: true,
-                  blockedAt:
-                    Timestamp.now()
+                  blockedAt
                 }
               );
 
+              renderUsersTable();
+              renderRecentUsers();
+              renderReportsTable();
 
               showToast(
                 "User blocked successfully."
               );
 
-
-              renderUsersTable();
-
-              renderRecentUsers();
-
-              renderReportsTable();
-
               closeUserModal();
 
             } catch (error) {
 
-              console.error(error);
+              console.error(
+                "blockUser:",
+                error
+              );
 
-              showToast(
+              throw new Error(
                 "Failed to block user: " +
-                error.message,
-                "error"
+                error.message
               );
 
             }
@@ -6064,7 +6757,154 @@
 
     /* ==========================================================
        DISMISS REPORTS
+    /* ==========================================================
+       DISMISS REPORTS
     =========================================================== */
+
+    async function findAllReportsForUser(uid) {
+
+      // Most Masoya reports use reportedUid. The fallbacks keep older
+      // report documents compatible without downloading the full collection.
+      const fields = [
+        "reportedUid",
+        "userId",
+        "uid"
+      ];
+
+      for (const field of fields) {
+
+        try {
+
+          const snapshot =
+            await withTimeout(
+              getDocs(
+                query(
+                  collection(db, "reports"),
+                  where(
+                    field,
+                    "==",
+                    uid
+                  )
+                )
+              ),
+              10000
+            );
+
+          if (!snapshot.empty) {
+            return snapshot.docs;
+          }
+
+        } catch (error) {
+
+          console.warn(
+            `Report lookup by ${field} failed:`,
+            error
+          );
+
+        }
+
+      }
+
+      return [];
+
+    }
+
+
+    async function updateReportsForUser(
+      uid,
+      status
+    ) {
+
+      const docs =
+        await findAllReportsForUser(uid);
+
+      if (!docs.length) {
+        return 0;
+      }
+
+      const now =
+        Timestamp.now();
+
+      const chunks = [];
+
+      for (
+        let index = 0;
+        index < docs.length;
+        index += 400
+      ) {
+        chunks.push(
+          docs.slice(index, index + 400)
+        );
+      }
+
+      await Promise.all(
+        chunks.map(
+          (chunk) => {
+
+            const batch =
+              writeBatch(db);
+
+            chunk.forEach(
+              (reportDoc) => {
+
+                batch.update(
+                  reportDoc.ref,
+                  {
+                    status,
+                    reviewedAt: now,
+                    reviewedBy:
+                      currentUser.uid
+                  }
+                );
+
+              }
+            );
+
+            return withTimeout(
+              batch.commit(),
+              ACTION_TIMEOUT_MS
+            );
+
+          }
+        )
+      );
+
+      const changedIds =
+        new Set(
+          docs.map(
+            (reportDoc) =>
+              reportDoc.id
+          )
+        );
+
+      reports.forEach(
+        (report) => {
+
+          if (
+            changedIds.has(
+              report.id
+            )
+          ) {
+            report.status =
+              status;
+            report.reviewedAt =
+              now;
+            report.reviewedBy =
+              currentUser.uid;
+          }
+
+        }
+      );
+
+      writeCache(
+        "reports",
+        reports.slice(0, REPORT_CACHE_LIMIT)
+      );
+
+      return docs.length;
+
+    }
+
 
     window.dismissReports =
       function(encodedUid) {
@@ -6074,81 +6914,26 @@
             encodedUid
           );
 
-
         openConfirmModal(
           "Dismiss Reports",
           "Mark all reports for this user as dismissed?",
           async () => {
 
-            try {
-
-              const userReports =
-                reports.filter(
-                  (report) =>
-                    (
-                      report.reportedUid ||
-                      report.userId ||
-                      report.uid
-                    ) === uid
-                );
-
-
-              for (
-                const report of
-                userReports
-              ) {
-
-                await updateDoc(
-                  doc(
-                    db,
-                    "reports",
-                    report.id
-                  ),
-                  {
-                    status:
-                      "dismissed",
-                    reviewedAt:
-                      Timestamp.now(),
-                    reviewedBy:
-                      currentUser.uid
-                  }
-                );
-
-              }
-
-
-              userReports.forEach(
-                (report) => {
-
-                  report.status =
-                    "dismissed";
-
-                }
+            const count =
+              await updateReportsForUser(
+                uid,
+                "dismissed"
               );
 
+            groupReports();
+            renderReportsTable();
+            updateReportStats();
 
-              groupReports();
-
-              renderReportsTable();
-
-              updateReportStats();
-
-
-              showToast(
-                "Reports dismissed successfully."
-              );
-
-            } catch (error) {
-
-              console.error(error);
-
-              showToast(
-                "Failed to dismiss reports: " +
-                error.message,
-                "error"
-              );
-
-            }
+            showToast(
+              count
+                ? `${count} report(s) dismissed successfully.`
+                : "No reports found for this user."
+            );
 
           }
         );
@@ -6156,6 +6941,8 @@
       };
 
 
+    /* ==========================================================
+       MARK REVIEWED
     /* ==========================================================
        MARK REVIEWED
     =========================================================== */
@@ -6168,86 +6955,118 @@
             encodedUid
           );
 
-
         openConfirmModal(
           "Mark Reviewed",
           "Mark all pending reports for this user as reviewed?",
           async () => {
 
-            try {
+            const docs =
+              await findAllReportsForUser(uid);
 
-              const userReports =
-                reports.filter(
-                  (report) =>
-                    (
-                      report.reportedUid ||
-                      report.userId ||
-                      report.uid
-                    ) === uid &&
-                    (
-                      report.status ||
-                      "pending"
-                    ) ===
+            const pendingDocs =
+              docs.filter(
+                (reportDoc) =>
+                  (
+                    reportDoc.data().status ||
                     "pending"
-                );
-
-
-              for (
-                const report of
-                userReports
-              ) {
-
-                await updateDoc(
-                  doc(
-                    db,
-                    "reports",
-                    report.id
-                  ),
-                  {
-                    status:
-                      "reviewed",
-                    reviewedAt:
-                      Timestamp.now(),
-                    reviewedBy:
-                      currentUser.uid
-                  }
-                );
-
-              }
-
-
-              userReports.forEach(
-                (report) => {
-
-                  report.status =
-                    "reviewed";
-
-                }
+                  ) === "pending"
               );
 
-
-              groupReports();
-
-              renderReportsTable();
-
-              updateReportStats();
-
+            if (!pendingDocs.length) {
 
               showToast(
-                "Reports marked as reviewed."
+                "No pending reports found for this user.",
+                "warning"
               );
 
-            } catch (error) {
-
-              console.error(error);
-
-              showToast(
-                "Failed to mark reports reviewed: " +
-                error.message,
-                "error"
-              );
+              return;
 
             }
+
+            const now =
+              Timestamp.now();
+
+            const chunks = [];
+
+            for (
+              let index = 0;
+              index < pendingDocs.length;
+              index += 400
+            ) {
+              chunks.push(
+                pendingDocs.slice(index, index + 400)
+              );
+            }
+
+            await Promise.all(
+              chunks.map(
+                (chunk) => {
+
+                  const batch =
+                    writeBatch(db);
+
+                  chunk.forEach(
+                    (reportDoc) => {
+
+                      batch.update(
+                        reportDoc.ref,
+                        {
+                          status: "reviewed",
+                          reviewedAt: now,
+                          reviewedBy:
+                            currentUser.uid
+                        }
+                      );
+
+                    }
+                  );
+
+                  return withTimeout(
+                    batch.commit(),
+                    ACTION_TIMEOUT_MS
+                  );
+
+                }
+              )
+            );
+
+            const pendingIds =
+              new Set(
+                pendingDocs.map(
+                  (reportDoc) =>
+                    reportDoc.id
+                )
+              );
+
+            reports.forEach(
+              (report) => {
+
+                if (
+                  pendingIds.has(
+                    report.id
+                  )
+                ) {
+                  report.status = "reviewed";
+                  report.reviewedAt = now;
+                  report.reviewedBy =
+                    currentUser.uid;
+                }
+
+              }
+            );
+
+            writeCache(
+              "reports",
+              reports.slice(0, REPORT_CACHE_LIMIT)
+            );
+
+            groupReports();
+            renderReportsTable();
+            updateReportStats();
+
+            showToast(
+              `${pendingDocs.length} report(s) marked as reviewed.`
+            );
 
           }
         );
@@ -6255,6 +7074,8 @@
       };
 
 
+    /* ==========================================================
+       LOCAL USER UPDATE
     /* ==========================================================
        LOCAL USER UPDATE
     =========================================================== */
@@ -6334,18 +7155,57 @@
           const callback =
             confirmCallback;
 
-          if (!callback) {
+          if (!callback || confirmActionButtonBusy) {
             return;
           }
 
-          closeConfirmModal();
+          confirmActionButtonBusy = true;
 
-          await callback();
+          const button =
+            $("confirmActionButton");
+
+          const previousHtml =
+            button.innerHTML;
+
+          button.disabled = true;
+          button.innerHTML = `
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            Processing…
+          `;
+
+          try {
+
+            await callback();
+
+            closeConfirmModal();
+
+          } catch (error) {
+
+            console.error(
+              "Confirmation action:",
+              error
+            );
+
+            showToast(
+              error.message ||
+              "Action could not be completed.",
+              "error"
+            );
+
+          } finally {
+
+            confirmActionButtonBusy = false;
+            button.disabled = false;
+            button.innerHTML = previousHtml;
+
+          }
 
         }
       );
 
 
+    /* ==========================================================
+       VERIFICATION REQUESTS
     /* ==========================================================
        VERIFICATION REQUESTS
        - Only pending requests are queried from Firestore.
@@ -7494,7 +8354,11 @@
           );
         }
 
-        await batch.commit();
+        await withTimeout(
+          batch.commit(),
+          ACTION_TIMEOUT_MS,
+          "Verification update timed out. Please check your connection and try again."
+        );
 
         // Keep local state consistent with the optimistic removal.
         verificationRequests =
@@ -7740,6 +8604,7 @@
         }
 
       } finally {
+        configInitialized = true;
         hideSyncStatus();
       }
 
@@ -7841,12 +8706,13 @@
               updatedBy: currentUser.uid
             };
 
-            await setDoc(
-              doc(
-                db,
-                "app_config",
-                "update"
-              ),
+            await withTimeout(
+              setDoc(
+                doc(
+                  db,
+                  "app_config",
+                  "update"
+                ),
               {
                 minimumVersionCode,
                 latestVersionCode,
@@ -7859,9 +8725,12 @@
                 updatedBy:
                   currentUser.uid
               },
-              {
-                merge: true
-              }
+                {
+                  merge: true
+                }
+              ),
+              ACTION_TIMEOUT_MS,
+              "Saving configuration timed out. Please check your connection and try again."
             );
 
 
@@ -8578,50 +9447,156 @@
        DASHBOARD
     =========================================================== */
 
-    async function refreshDashboard() {
+    async function refreshDashboard({
+      silent = false
+    } = {}) {
 
-      if (!allUsers.length) {
-        return;
+      if (!silent) {
+        showSyncStatus("Updating dashboard…");
       }
 
+      const now =
+        new Date();
 
-      updateUserStats();
-
-      updateReportStats();
-
-
-      try {
-
-        const matchesSnapshot =
-          await getDocs(
-            collection(
-              db,
-              "matches"
-            )
-          );
-
-
-        $("statMatches")
-          .textContent =
-          matchesSnapshot.size
-            .toLocaleString();
-
-      } catch (error) {
-
-        console.error(
-          "Matches:",
-          error
+      const startOfToday =
+        new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate()
         );
 
+      const activeQuery =
+        query(
+          collection(db, "users"),
+          where(
+            "lastActiveAt",
+            ">=",
+            Timestamp.fromDate(startOfToday)
+          )
+        );
+
+      const pendingReportsQuery =
+        query(
+          collection(db, "reports"),
+          where(
+            "status",
+            "==",
+            "pending"
+          )
+        );
+
+      const results =
+        await Promise.allSettled([
+
+          getCountFromServer(
+            collection(db, "users")
+          ),
+
+          getCountFromServer(
+            activeQuery
+          ),
+
+          getCountFromServer(
+            collection(db, "matches")
+          ),
+
+          getCountFromServer(
+            pendingReportsQuery
+          )
+
+        ]);
+
+      const [
+        totalResult,
+        activeResult,
+        matchesResult,
+        pendingReportsResult
+      ] = results;
+
+      if (
+        totalResult.status === "fulfilled"
+      ) {
+
+        userTotalCount =
+          totalResult.value.data().count;
+
+        $("statTotalUsers")
+          .textContent =
+          Number(
+            userTotalCount
+          ).toLocaleString();
+
+      }
+
+      if (
+        activeResult.status === "fulfilled"
+      ) {
+
+        dashboardActiveCountLoaded = true;
+
+        $("statActiveToday")
+          .textContent =
+          Number(
+            activeResult.value.data().count
+          ).toLocaleString();
+
+      } else {
+
+        dashboardActiveCountLoaded = false;
+
+        updateUserStats();
+
+      }
+
+      if (
+        matchesResult.status === "fulfilled"
+      ) {
+
         $("statMatches")
           .textContent =
-          "—";
+          Number(
+            matchesResult.value.data().count
+          ).toLocaleString();
 
+      } else {
+
+        $("statMatches")
+          .textContent = "—";
+
+      }
+
+      if (
+        pendingReportsResult.status === "fulfilled"
+      ) {
+
+        $("statPendingReports")
+          .textContent =
+          Number(
+            pendingReportsResult.value.data().count
+          ).toLocaleString();
+
+      } else {
+
+        updateReportStats();
+
+      }
+
+      // Chart rendering is local-only now; it never downloads the
+      // entire users or matches collection.
+      renderCharts();
+
+      updateUsersPaginationUi();
+      updateReportsPaginationUi();
+
+      if (!silent) {
+        hideSyncStatus();
       }
 
     }
 
 
+    /* ==========================================================
+       CHARTS
     /* ==========================================================
        CHARTS
     =========================================================== */
