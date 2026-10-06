@@ -1247,7 +1247,7 @@
     }
 
     .verification-card-actions {
-      display: flex;
+      display: none;
       justify-content: flex-end;
       align-items: center;
       gap: 9px;
@@ -1255,6 +1255,17 @@
       padding: 14px 18px;
       border-top: 1px solid var(--border);
       background: #fbfcfe;
+    }
+
+    .verification-desktop-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .verification-desktop-actions .btn {
+      flex: 1 1 180px;
     }
 
     .verification-empty {
@@ -1293,6 +1304,14 @@
       .verification-video,
       .verification-photo-wrap {
         height: 380px;
+      }
+
+      .verification-desktop-actions {
+        display: none;
+      }
+
+      .verification-card-actions {
+        display: flex;
       }
     }
 
@@ -3560,9 +3579,17 @@
     // PERFORMANCE STATE
     // ============================================================
     const USER_PAGE_SIZE = 40;
+    const USER_SEARCH_RESULT_BATCH = 120;
+    const USER_SEARCH_SCAN_PAGE = 120;
+    const USER_SEARCH_MAX_PAGES_PER_REQUEST = 6;
     const USER_CACHE_LIMIT = 120;
+
     const REPORT_PAGE_SIZE = 40;
+    const REPORT_SEARCH_RESULT_BATCH = 120;
+    const REPORT_SEARCH_SCAN_PAGE = 120;
+    const REPORT_SEARCH_MAX_PAGES_PER_REQUEST = 6;
     const REPORT_CACHE_LIMIT = 120;
+
     const ACTION_TIMEOUT_MS = 12000;
 
     let userPageCursor = null;
@@ -3584,7 +3611,14 @@
     const reportUserCache = new Map();
     const reportUserFetchInFlight = new Set();
 
+    const verificationProfileCache = new Map();
+    const verificationProfileFetchInFlight = new Set();
+
     let filterSearchTimer = null;
+    let userSearchTimer = null;
+    let reportSearchTimer = null;
+    let userSearchQueued = false;
+    let reportSearchQueued = false;
 
 
     /* ==========================================================
@@ -3819,6 +3853,9 @@
         user.image ||
         user.profileImage ||
         user.profileImageUrl ||
+        user.profilePhoto ||
+        user.avatar ||
+        user.avatarUrl ||
         ""
       );
     }
@@ -3874,6 +3911,28 @@
         user.lastSeen ||
         user.updatedAt ||
         user.createdAt ||
+        null
+      );
+    }
+
+
+    function getUserCreatedAt(user) {
+      return (
+        user.createdAt ||
+        user.created_at ||
+        user.registeredAt ||
+        user.joinedAt ||
+        null
+      );
+    }
+
+
+    function getReportCreatedAt(report) {
+      return (
+        report.createdAt ||
+        report.created_at ||
+        report.reportedAt ||
+        report.timestamp ||
         null
       );
     }
@@ -4553,6 +4612,71 @@
     }
 
 
+    function userMatchesSearchAndFilter(user) {
+
+      if (
+        currentUserSearch
+      ) {
+
+        const search =
+          currentUserSearch.toLowerCase();
+
+        const values = [
+          getUserName(user),
+          getUserEmail(user),
+          user.uid,
+          user.gender,
+          getUserLocation(user),
+          user.city,
+          user.state,
+          user.country
+        ];
+
+        const matchesSearch =
+          values.some(
+            (value) =>
+              String(value || "")
+                .toLowerCase()
+                .includes(search)
+          );
+
+        if (!matchesSearch) {
+          return false;
+        }
+      }
+
+      if (
+        currentUserFilter === "premium" &&
+        !isPremiumUser(user)
+      ) {
+        return false;
+      }
+
+      if (
+        currentUserFilter === "normal" &&
+        isPremiumUser(user)
+      ) {
+        return false;
+      }
+
+      return true;
+    }
+
+
+    function normalizeUserDoc(documentSnapshot) {
+
+      const data =
+        documentSnapshot.data();
+
+      return {
+        ...data,
+        uid:
+          data.uid ||
+          documentSnapshot.id
+      };
+    }
+
+
     async function loadUsers({
       reset = true,
       silent = false
@@ -4577,23 +4701,47 @@
       const refreshButton =
         $("refreshUsersButton");
 
+      const searchMode =
+        Boolean(currentUserSearch);
+
+      const targetMatches =
+        searchMode
+          ? USER_SEARCH_RESULT_BATCH
+          : USER_PAGE_SIZE;
+
+      let addedThisRequest = 0;
+      let pagesRead = 0;
+
       if (reset) {
         userPageCursor = null;
         userHasMore = true;
 
-        if (!silent && !allUsers.length) {
+        if (!searchMode) {
+          if (!silent && !allUsers.length) {
+            $("allUsersTable").innerHTML = `
+              <tr>
+                <td colspan="7" class="loading-row">
+                  <i class="fa-solid fa-spinner fa-spin"></i>
+                  Loading latest users...
+                </td>
+              </tr>
+            `;
+          } else {
+            showSyncStatus("Refreshing latest users…");
+            $("allUsersTable").classList.add("soft-loading");
+          }
+        } else {
           $("allUsersTable").innerHTML = `
             <tr>
               <td colspan="7" class="loading-row">
                 <i class="fa-solid fa-spinner fa-spin"></i>
-                Loading first page...
+                Searching latest users…
               </td>
             </tr>
           `;
-        } else {
-          showSyncStatus("Refreshing users…");
-          $("allUsersTable").classList.add("soft-loading");
         }
+
+        allUsers = [];
       } else if (button) {
         button.disabled = true;
         button.innerHTML = `
@@ -4608,58 +4756,86 @@
 
       try {
 
-        // Pagination by document ID avoids depending on optional fields
-        // such as createdAt and does not require a composite index.
-        const constraints = [
-          orderBy(documentId()),
-          limit(USER_PAGE_SIZE)
-        ];
+        do {
 
-        if (userPageCursor) {
-          constraints.splice(
-            1,
-            0,
-            startAfter(userPageCursor)
-          );
-        }
+          // The users page is always ordered by account creation time.
+          // This makes every page and every Load More continuation recent-first.
+          const pageLimit =
+            searchMode
+              ? USER_SEARCH_SCAN_PAGE
+              : USER_PAGE_SIZE;
 
-        const snapshot =
-          await getDocs(
-            query(
-              collection(db, "users"),
-              ...constraints
-            )
-          );
+          const constraints = [
+            orderBy("createdAt", "desc"),
+            limit(pageLimit)
+          ];
 
-        if (reset) {
-          allUsers = [];
-        }
-
-        snapshot.forEach(
-          (documentSnapshot) => {
-
-            const data =
-              documentSnapshot.data();
-
-            allUsers.push({
-              ...data,
-              uid:
-                data.uid ||
-                documentSnapshot.id
-            });
-
+          if (userPageCursor) {
+            constraints.push(
+              startAfter(userPageCursor)
+            );
           }
+
+          const snapshot =
+            await withTimeout(
+              getDocs(
+                query(
+                  collection(db, "users"),
+                  ...constraints
+                )
+              ),
+              15000,
+              "Loading users timed out. Please try again."
+            );
+
+          snapshot.forEach(
+            (documentSnapshot) => {
+
+              const user =
+                normalizeUserDoc(documentSnapshot);
+
+              if (
+                !searchMode ||
+                userMatchesSearchAndFilter(user)
+              ) {
+                allUsers.push(user);
+                addedThisRequest += 1;
+              }
+            }
+          );
+
+          userPageCursor =
+            snapshot.docs.length
+              ? snapshot.docs[snapshot.docs.length - 1]
+              : userPageCursor;
+
+          userHasMore =
+            snapshot.docs.length === pageLimit;
+
+          pagesRead += 1;
+
+          // Search mode intentionally scans recent pages until up to 120
+          // matching results are available, or the collection is exhausted.
+        } while (
+          searchMode &&
+          userHasMore &&
+          addedThisRequest < targetMatches &&
+          pagesRead < USER_SEARCH_MAX_PAGES_PER_REQUEST
         );
 
-        userPageCursor =
-          snapshot.docs.length
-            ? snapshot.docs[snapshot.docs.length - 1]
-            : userPageCursor;
-
-        userHasMore =
-          snapshot.docs.length === USER_PAGE_SIZE;
-
         usersInitialized = true;
+
+        // The query itself is recent-first, so retain that order. This
+        // client sort only protects ties / cached data and never reverses it.
+        allUsers.sort(
+          (a, b) =>
+            (
+              toDate(getUserCreatedAt(b))?.getTime() || 0
+            ) -
+            (
+              toDate(getUserCreatedAt(a))?.getTime() || 0
+            )
+        );
 
         applyUserFilters();
         renderRecentUsers();
@@ -4674,7 +4850,6 @@
 
         saveUsersCache();
 
-        // Count is lightweight and does not download user documents.
         if (
           reset &&
           userTotalCount === null
@@ -4688,6 +4863,82 @@
           "loadUsers:",
           error
         );
+
+        // Keep the old pagination query as a fallback only when the recent
+        // createdAt query itself cannot be executed.
+        try {
+          if (
+            String(error?.message || "")
+              .toLowerCase()
+              .includes("createdat")
+          ) {
+            const fallbackConstraints = [
+              orderBy(documentId(), "desc"),
+              limit(USER_PAGE_SIZE)
+            ];
+
+            if (userPageCursor) {
+              fallbackConstraints.push(
+                startAfter(userPageCursor)
+              );
+            }
+
+            const fallbackSnapshot =
+              await getDocs(
+                query(
+                  collection(db, "users"),
+                  ...fallbackConstraints
+                )
+              );
+
+            if (reset) {
+              allUsers = [];
+            }
+
+            fallbackSnapshot.forEach(
+              (documentSnapshot) => {
+                const user =
+                  normalizeUserDoc(documentSnapshot);
+
+                if (
+                  !searchMode ||
+                  userMatchesSearchAndFilter(user)
+                ) {
+                  allUsers.push(user);
+                  addedThisRequest += 1;
+                }
+              }
+            );
+
+            userPageCursor =
+              fallbackSnapshot.docs.length
+                ? fallbackSnapshot.docs[fallbackSnapshot.docs.length - 1]
+                : userPageCursor;
+
+            userHasMore =
+              fallbackSnapshot.docs.length === USER_PAGE_SIZE;
+
+            allUsers.sort(
+              (a, b) =>
+                (
+                  toDate(getUserCreatedAt(b))?.getTime() || 0
+                ) -
+                (
+                  toDate(getUserCreatedAt(a))?.getTime() || 0
+                )
+            );
+
+            applyUserFilters();
+            renderRecentUsers();
+            updateUserStats();
+            return;
+          }
+        } catch (fallbackError) {
+          console.error(
+            "loadUsers fallback:",
+            fallbackError
+          );
+        }
 
         if (!allUsers.length) {
           $("allUsersTable").innerHTML = `
@@ -4722,7 +4973,8 @@
         }
 
         if (button) {
-          button.disabled = !userHasMore;
+          button.disabled =
+            !userHasMore;
           button.innerHTML = `
             <i class="fa-solid fa-plus"></i>
             ${userHasMore ? "Load More" : "All Loaded"}
@@ -4731,6 +4983,16 @@
 
         hideSyncStatus();
         updateUsersPaginationUi();
+
+        if (userSearchQueued) {
+          userSearchQueued = false;
+          window.clearTimeout(userSearchTimer);
+          userSearchTimer = window.setTimeout(() => {
+            if (!usersLoading) {
+              void loadUsers({ reset: true, silent: false });
+            }
+          }, 0);
+        }
 
       }
 
@@ -4779,9 +5041,11 @@
       if (info) {
 
         info.textContent =
-          total !== null
-            ? `Loaded ${loaded.toLocaleString()} of ${total.toLocaleString()} users`
-            : `Loaded ${loaded.toLocaleString()} user${loaded === 1 ? "" : "s"}`;
+          currentUserSearch
+            ? `${loaded.toLocaleString()} matching users loaded · newest first`
+            : total !== null
+              ? `Loaded ${loaded.toLocaleString()} of ${total.toLocaleString()} users · newest first`
+              : `Loaded ${loaded.toLocaleString()} user${loaded === 1 ? "" : "s"} · newest first`;
 
       }
 
@@ -4800,9 +5064,11 @@
 
       if ($("userCountLabel")) {
         $("userCountLabel").textContent =
-          total !== null
-            ? `${shown.toLocaleString()} shown · ${total.toLocaleString()} total`
-            : `${shown.toLocaleString()} loaded`;
+          currentUserSearch
+            ? `${shown.toLocaleString()} search results · newest first`
+            : total !== null
+              ? `${shown.toLocaleString()} shown · ${total.toLocaleString()} total`
+              : `${shown.toLocaleString()} loaded`;
       }
 
     }
@@ -4814,54 +5080,27 @@
         [...allUsers];
 
       if (currentUserSearch) {
-
-        const search =
-          currentUserSearch
-            .toLowerCase();
-
-        result =
-          result.filter(
-            (user) => {
-
-              const values = [
-                getUserName(user),
-                getUserEmail(user),
-                user.uid,
-                user.gender,
-                getUserLocation(user),
-                user.city,
-                user.state,
-                user.country
-              ];
-
-              return values.some(
-                (value) =>
-                  String(value || "")
-                    .toLowerCase()
-                    .includes(search)
-              );
-
-            }
-          );
-
-      }
-
-      if (currentUserFilter === "premium") {
-
-        result =
-          result.filter(
-            isPremiumUser
-          );
-
+        result = result.filter(
+          (user) =>
+            userMatchesSearchAndFilter(user)
+        );
+      } else if (currentUserFilter === "premium") {
+        result = result.filter(isPremiumUser);
       } else if (currentUserFilter === "normal") {
-
-        result =
-          result.filter(
-            (user) =>
-              !isPremiumUser(user)
-          );
-
+        result = result.filter(
+          (user) => !isPremiumUser(user)
+        );
       }
+
+      result.sort(
+        (a, b) =>
+          (
+            toDate(getUserCreatedAt(b))?.getTime() || 0
+          ) -
+          (
+            toDate(getUserCreatedAt(a))?.getTime() || 0
+          )
+      );
 
       filteredUsers = result;
 
@@ -4891,7 +5130,7 @@
                     : "No users found."}
                 </div>
                 <small>
-                  ${userHasMore ? "Use Load More to search further." : "There are no more users to load."}
+                  ${userHasMore ? "Load More continues from the newest-to-oldest position." : "There are no more matching users."}
                 </small>
               </div>
             </td>
@@ -4902,19 +5141,7 @@
       }
 
       const sorted =
-        [...filteredUsers].sort(
-          (a, b) =>
-            (
-              toDate(
-                getLastActive(b)
-              )?.getTime() || 0
-            ) -
-            (
-              toDate(
-                getLastActive(a)
-              )?.getTime() || 0
-            )
-        );
+        [...filteredUsers];
 
       tbody.innerHTML =
         sorted
@@ -5001,7 +5228,6 @@
         let snapshot;
 
         try {
-
           snapshot =
             await getDocs(
               query(
@@ -5010,10 +5236,7 @@
                 limit(10)
               )
             );
-
         } catch (orderedError) {
-
-          // Fallback for projects where createdAt is not present yet.
           console.warn(
             "Recent users ordered query failed; using lightweight fallback.",
             orderedError
@@ -5023,41 +5246,29 @@
             await getDocs(
               query(
                 collection(db, "users"),
+                orderBy(documentId(), "desc"),
                 limit(25)
               )
             );
-
         }
 
         recentUsers = [];
 
         snapshot.forEach(
           (documentSnapshot) => {
-
-            const data =
-              documentSnapshot.data();
-
-            recentUsers.push({
-              ...data,
-              uid:
-                data.uid ||
-                documentSnapshot.id
-            });
-
+            recentUsers.push(
+              normalizeUserDoc(documentSnapshot)
+            );
           }
         );
 
         recentUsers.sort(
           (a, b) =>
             (
-              toDate(
-                getLastActive(b)
-              )?.getTime() || 0
+              toDate(getUserCreatedAt(b))?.getTime() || 0
             ) -
             (
-              toDate(
-                getLastActive(a)
-              )?.getTime() || 0
+              toDate(getUserCreatedAt(a))?.getTime() || 0
             )
         );
 
@@ -5065,18 +5276,6 @@
           recentUsers.slice(0, 10);
 
         renderRecentUsers();
-
-        // Warm only these few users into the local list.
-        const seen = new Set(
-          allUsers.map((user) => user.uid)
-        );
-
-        recentUsers.forEach((user) => {
-          if (!seen.has(user.uid)) {
-            allUsers.push(user);
-          }
-        });
-
         updateUserStats();
 
       } catch (error) {
@@ -5311,17 +5510,26 @@
         (event) => {
 
           currentUserSearch =
-            event.target.value
-              .trim();
+            event.target.value.trim();
 
           window.clearTimeout(
-            filterSearchTimer
+            userSearchTimer
           );
 
-          filterSearchTimer =
+          userSearchTimer =
             window.setTimeout(
-              () => applyUserFilters(),
-              120
+              () => {
+                if (usersLoading) {
+                  userSearchQueued = true;
+                  return;
+                }
+
+                void loadUsers({
+                  reset: true,
+                  silent: false
+                });
+              },
+              250
             );
 
         }
@@ -5450,6 +5658,103 @@
     }
 
 
+    function reportGroupMatchesSearch(group, search) {
+      if (!search) return true;
+
+      const user =
+        getReportUser(group.uid);
+
+      return [
+        getUserName(user),
+        getUserEmail(user),
+        group.uid,
+        ...group.reasons
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(search);
+    }
+
+
+    async function enrichReportUsersByUids(uids) {
+
+      const unique =
+        Array.from(
+          new Set(
+            (uids || [])
+              .filter(Boolean)
+              .filter(
+                (uid) =>
+                  !reportUserCache.has(uid)
+              )
+          )
+        );
+
+      if (!unique.length) {
+        return;
+      }
+
+      const batches = [];
+
+      for (let index = 0; index < unique.length; index += 30) {
+        batches.push(
+          unique.slice(index, index + 30)
+        );
+      }
+
+      await Promise.all(
+        batches.map(
+          async (batchUids) => {
+            const allowed =
+              batchUids.filter(
+                (uid) =>
+                  !reportUserFetchInFlight.has(uid)
+              );
+
+            if (!allowed.length) return;
+
+            allowed.forEach(
+              (uid) =>
+                reportUserFetchInFlight.add(uid)
+            );
+
+            try {
+              const snapshot =
+                await withTimeout(
+                  getDocs(
+                    query(
+                      collection(db, "users"),
+                      where(
+                        documentId(),
+                        "in",
+                        allowed
+                      )
+                    )
+                  ),
+                  10000,
+                  "Loading report user details timed out."
+                );
+
+              snapshot.forEach(
+                (documentSnapshot) => {
+                  reportUserCache.set(
+                    documentSnapshot.id,
+                    normalizeUserDoc(documentSnapshot)
+                  );
+                }
+              );
+            } finally {
+              allowed.forEach(
+                (uid) =>
+                  reportUserFetchInFlight.delete(uid)
+              );
+            }
+          }
+        )
+      );
+    }
+
+
     async function loadReports({
       reset = true,
       silent = false
@@ -5474,36 +5779,37 @@
       const refreshButton =
         $("refreshReportsButton");
 
-      if (reset) {
+      const searchMode =
+        Boolean(currentReportSearch);
 
+      const targetMatches =
+        searchMode
+          ? REPORT_SEARCH_RESULT_BATCH
+          : REPORT_PAGE_SIZE;
+
+      let pagesRead = 0;
+
+      if (reset) {
         reportPageCursor = null;
         reportHasMore = true;
         reportTotalCount = null;
+        reports = [];
+        groupedReports = [];
 
-        if (!silent && !reports.length) {
-          $("reportsTable").innerHTML = `
-            <tr>
-              <td colspan="7" class="loading-row">
-                <i class="fa-solid fa-spinner fa-spin"></i>
-                Loading first page...
-              </td>
-            </tr>
-          `;
-        } else {
-          showSyncStatus("Refreshing reports…");
-          $("reportsTable")
-            .classList
-            .add("soft-loading");
-        }
-
+        $("reportsTable").innerHTML = `
+          <tr>
+            <td colspan="7" class="loading-row">
+              <i class="fa-solid fa-spinner fa-spin"></i>
+              ${searchMode ? "Searching latest reports…" : "Loading latest reports…"}
+            </td>
+          </tr>
+        `;
       } else if (button) {
-
         button.disabled = true;
         button.innerHTML = `
           <i class="fa-solid fa-spinner fa-spin"></i>
           Loading…
         `;
-
       }
 
       if (refreshButton) {
@@ -5512,61 +5818,99 @@
 
       try {
 
-        const constraints = [
-          orderBy(documentId()),
-          limit(REPORT_PAGE_SIZE)
-        ];
+        do {
 
-        if (reportPageCursor) {
-          constraints.splice(
-            1,
-            0,
-            startAfter(reportPageCursor)
-          );
-        }
+          const pageLimit =
+            searchMode
+              ? REPORT_SEARCH_SCAN_PAGE
+              : REPORT_PAGE_SIZE;
 
-        const snapshot =
-          await getDocs(
-            query(
-              collection(db, "reports"),
-              ...constraints
-            )
-          );
+          const constraints = [
+            orderBy("createdAt", "desc"),
+            limit(pageLimit)
+          ];
 
-        if (reset) {
-          reports = [];
-          groupedReports = [];
-        }
-
-        snapshot.forEach(
-          (documentSnapshot) => {
-
-            reports.push({
-              id:
-                documentSnapshot.id,
-              ...documentSnapshot.data()
-            });
-
+          if (reportPageCursor) {
+            constraints.push(
+              startAfter(reportPageCursor)
+            );
           }
+
+          const snapshot =
+            await withTimeout(
+              getDocs(
+                query(
+                  collection(db, "reports"),
+                  ...constraints
+                )
+              ),
+              15000,
+              "Loading reports timed out. Please try again."
+            );
+
+          snapshot.forEach(
+            (documentSnapshot) => {
+              reports.push({
+                id:
+                  documentSnapshot.id,
+                ...documentSnapshot.data()
+              });
+            }
+          );
+
+          reportPageCursor =
+            snapshot.docs.length
+              ? snapshot.docs[snapshot.docs.length - 1]
+              : reportPageCursor;
+
+          reportHasMore =
+            snapshot.docs.length === pageLimit;
+
+          groupReports();
+
+          if (searchMode) {
+            await enrichReportUsersByUids(
+              groupedReports
+                .map((group) => group.uid)
+            );
+
+            groupReports();
+          }
+
+          pagesRead += 1;
+
+        } while (
+          searchMode &&
+          reportHasMore &&
+          groupedReports.filter(
+            (group) =>
+              reportGroupMatchesSearch(
+                group,
+                currentReportSearch.toLowerCase()
+              )
+          ).length < targetMatches &&
+          pagesRead < REPORT_SEARCH_MAX_PAGES_PER_REQUEST
         );
-
-        reportPageCursor =
-          snapshot.docs.length
-            ? snapshot.docs[snapshot.docs.length - 1]
-            : reportPageCursor;
-
-        reportHasMore =
-          snapshot.docs.length === REPORT_PAGE_SIZE;
 
         reportsInitialized = true;
 
-        groupReports();
+        groupedReports.sort(
+          (a, b) =>
+            (
+              toDate(b.latestReport)?.getTime() || 0
+            ) -
+            (
+              toDate(a.latestReport)?.getTime() || 0
+            )
+        );
+
         renderReportsTable();
         updateReportStats();
 
         writeCache(
           "reports",
-          reports.slice(0, REPORT_CACHE_LIMIT)
+          reports
+            .slice(0, REPORT_CACHE_LIMIT)
         );
 
         if (
@@ -5582,6 +5926,67 @@
           "loadReports:",
           error
         );
+
+        // A missing createdAt field should not make the whole report section
+        // unusable. Fall back to document-id pagination, then sort the loaded
+        // records by their actual timestamps in the UI.
+        try {
+          const message =
+            String(error?.message || "")
+              .toLowerCase();
+
+          if (message.includes("createdat")) {
+            const fallbackConstraints = [
+              orderBy(documentId(), "desc"),
+              limit(REPORT_PAGE_SIZE)
+            ];
+
+            if (reportPageCursor) {
+              fallbackConstraints.push(
+                startAfter(reportPageCursor)
+              );
+            }
+
+            const snapshot =
+              await getDocs(
+                query(
+                  collection(db, "reports"),
+                  ...fallbackConstraints
+                )
+              );
+
+            if (reset) {
+              reports = [];
+            }
+
+            snapshot.forEach(
+              (documentSnapshot) => {
+                reports.push({
+                  id: documentSnapshot.id,
+                  ...documentSnapshot.data()
+                });
+              }
+            );
+
+            reportPageCursor =
+              snapshot.docs.length
+                ? snapshot.docs[snapshot.docs.length - 1]
+                : reportPageCursor;
+
+            reportHasMore =
+              snapshot.docs.length === REPORT_PAGE_SIZE;
+
+            groupReports();
+            renderReportsTable();
+            updateReportStats();
+            return;
+          }
+        } catch (fallbackError) {
+          console.error(
+            "loadReports fallback:",
+            fallbackError
+          );
+        }
 
         if (!reports.length) {
           $("reportsTable").innerHTML = `
@@ -5618,7 +6023,6 @@
         if (button) {
           button.disabled =
             !reportHasMore;
-
           button.innerHTML = `
             <i class="fa-solid fa-plus"></i>
             ${reportHasMore ? "Load More" : "All Loaded"}
@@ -5627,6 +6031,16 @@
 
         hideSyncStatus();
         updateReportsPaginationUi();
+
+        if (reportSearchQueued) {
+          reportSearchQueued = false;
+          window.clearTimeout(reportSearchTimer);
+          reportSearchTimer = window.setTimeout(() => {
+            if (!reportsLoading) {
+              void loadReports({ reset: true, silent: false });
+            }
+          }, 0);
+        }
 
       }
 
@@ -5655,9 +6069,11 @@
       if (info) {
 
         info.textContent =
-          total !== null
-            ? `Loaded ${loaded.toLocaleString()} report records · ${loadedGroups.toLocaleString()} reported users of ${total.toLocaleString()} records`
-            : `Loaded ${loaded.toLocaleString()} report records · ${loadedGroups.toLocaleString()} reported users`;
+          currentReportSearch
+            ? `${loadedGroups.toLocaleString()} matching reported users loaded · newest reports first`
+            : total !== null
+              ? `Loaded ${loaded.toLocaleString()} report records · ${loadedGroups.toLocaleString()} reported users of ${total.toLocaleString()} records · newest first`
+              : `Loaded ${loaded.toLocaleString()} report records · ${loadedGroups.toLocaleString()} reported users · newest first`;
 
       }
 
@@ -5966,40 +6382,14 @@
       if (
         currentReportSearch
       ) {
-
         const search =
-          currentReportSearch
-            .toLowerCase();
-
+          currentReportSearch.toLowerCase();
 
         list =
           list.filter(
-            (group) => {
-
-              const user =
-                getReportUser(
-                  group.uid
-                );
-
-
-              return [
-
-                getUserName(user),
-
-                getUserEmail(user),
-
-                group.uid,
-
-                ...group.reasons
-
-              ]
-                .join(" ")
-                .toLowerCase()
-                .includes(search);
-
-            }
+            (group) =>
+              reportGroupMatchesSearch(group, search)
           );
-
       }
 
 
@@ -6224,17 +6614,26 @@
         (event) => {
 
           currentReportSearch =
-            event.target.value
-              .trim();
+            event.target.value.trim();
 
           window.clearTimeout(
-            filterSearchTimer
+            reportSearchTimer
           );
 
-          filterSearchTimer =
+          reportSearchTimer =
             window.setTimeout(
-              () => renderReportsTable(),
-              120
+              () => {
+                if (reportsLoading) {
+                  reportSearchQueued = true;
+                  return;
+                }
+
+                void loadReports({
+                  reset: true,
+                  silent: false
+                });
+              },
+              250
             );
 
         }
@@ -7248,27 +7647,63 @@
 
 
     function getVerificationUser(request) {
+
       const uid =
         request?.uid ||
+        request?.userId ||
+        request?.userUid ||
         request?.id;
 
-      return (
+      if (
+        uid &&
+        verificationProfileCache.has(uid)
+      ) {
+        return verificationProfileCache.get(uid);
+      }
+
+      const loaded =
         allUsers.find(
           (item) =>
             item.uid === uid
-        ) || {
+        );
+
+      if (loaded) {
+        verificationProfileCache.set(uid, loaded);
+        return loaded;
+      }
+
+      const fromRequest = {
+        uid,
+        fullName:
+          request?.name ||
+          request?.fullName ||
+          "Unknown User",
+        name:
+          request?.name ||
+          request?.fullName ||
+          "Unknown User",
+        email:
+          request?.email ||
+          "",
+        gender:
+          request?.gender ||
+          "",
+        photoUrl:
+          request?.photoUrl ||
+          request?.photoURL ||
+          request?.profileImage ||
+          request?.profileImageUrl ||
+          ""
+      };
+
+      if (uid) {
+        verificationProfileCache.set(
           uid,
-          fullName:
-            request?.name ||
-            "Unknown User",
-          name:
-            request?.name ||
-            "Unknown User",
-          photoUrl:
-            request?.photoUrl ||
-            ""
-        }
-      );
+          fromRequest
+        );
+      }
+
+      return fromRequest;
     }
 
 
@@ -7278,9 +7713,156 @@
 
       return (
         request?.photoUrl ||
+        request?.photoURL ||
+        request?.profileImage ||
+        request?.profileImageUrl ||
+        request?.profilePhoto ||
+        request?.avatar ||
+        request?.avatarUrl ||
         getUserPhoto(user) ||
         ""
       );
+    }
+
+
+    async function loadVerificationProfiles(requests) {
+
+      const uids =
+        Array.from(
+          new Set(
+            (requests || [])
+              .map(
+                (request) =>
+                  request?.uid ||
+                  request?.userId ||
+                  request?.userUid
+              )
+              .filter(Boolean)
+              .filter(
+                (uid) =>
+                  !verificationProfileFetchInFlight.has(uid)
+              )
+          )
+        );
+
+      if (!uids.length) return;
+
+      uids.forEach(
+        (uid) =>
+          verificationProfileFetchInFlight.add(uid)
+      );
+
+      try {
+
+        for (let index = 0; index < uids.length; index += 30) {
+
+          const chunk =
+            uids.slice(index, index + 30);
+
+          const snapshot =
+            await withTimeout(
+              getDocs(
+                query(
+                  collection(db, "users"),
+                  where(
+                    documentId(),
+                    "in",
+                    chunk
+                  )
+                )
+              ),
+              10000,
+              "Loading verification profiles timed out."
+            );
+
+          snapshot.forEach(
+            (documentSnapshot) => {
+              verificationProfileCache.set(
+                documentSnapshot.id,
+                normalizeUserDoc(documentSnapshot)
+              );
+            }
+          );
+        }
+
+        // Update only the verification cards whose user profile was enriched.
+        (requests || []).forEach(
+          (request) => {
+            const card =
+              $("verification-card-" + request.id);
+
+            if (!card) return;
+
+            const user =
+              getVerificationUser(request);
+
+            const nameElement =
+              card.querySelector(".verification-user-info .user-name");
+
+            if (nameElement) {
+              nameElement.textContent =
+                getUserName(user);
+            }
+
+            const emailElement =
+              card.querySelector(".verification-user-info .user-meta");
+
+            if (emailElement) {
+              emailElement.textContent =
+                getUserEmail(user);
+            }
+
+            const photo =
+              getVerificationProfilePhoto(request);
+
+            const photoElement =
+              card.querySelector(".verification-photo");
+
+            if (photo && photoElement && photoElement.src !== photo) {
+              photoElement.src = photo;
+              photoElement.style.display = "block";
+            } else if (photo && !photoElement) {
+              const wrap =
+                card.querySelector(".verification-photo-wrap");
+
+              if (wrap) {
+                wrap.innerHTML = `
+                  <img
+                    class="verification-photo"
+                    src="${escapeHtml(photo)}"
+                    alt="${escapeHtml(getUserName(user))}"
+                    loading="eager"
+                    decoding="async"
+                    onclick="openImagePreview('${encodeURIComponent(photo)}')"
+                    onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\"verification-empty\" style=\"padding:30px;\"><i class=\"fa-solid fa-image\"></i><div>Profile picture could not be loaded.</div></div>';"
+                  />
+                `;
+              }
+            }
+
+            const video =
+              card.querySelector("video");
+
+            const poster =
+              photo || "";
+
+            if (video && poster && !video.getAttribute("poster")) {
+              video.setAttribute("poster", poster);
+            }
+          }
+        );
+
+      } catch (error) {
+        console.warn(
+          "loadVerificationProfiles:",
+          error
+        );
+      } finally {
+        uids.forEach(
+          (uid) =>
+            verificationProfileFetchInFlight.delete(uid)
+        );
+      }
     }
 
 
@@ -7393,6 +7975,28 @@
                       </button>
 
                     </div>
+
+                    <div class="verification-desktop-actions">
+
+                      <button
+                        class="btn btn-success"
+                        type="button"
+                        onclick="approveVerification('${requestId}')"
+                      >
+                        <i class="fa-solid fa-check"></i>
+                        Approve & Verify
+                      </button>
+
+                      <button
+                        class="btn btn-danger"
+                        type="button"
+                        onclick="rejectVerification('${requestId}')"
+                      >
+                        <i class="fa-solid fa-xmark"></i>
+                        Reject
+                      </button>
+
+                    </div>
                   `
                   : `
                     <div class="verification-empty" style="padding:55px 10px;">
@@ -7419,7 +8023,8 @@
                         class="verification-photo"
                         src="${escapeHtml(profilePhoto)}"
                         alt="${escapeHtml(getUserName(user))}"
-                        loading="lazy"
+                        loading="eager"
+                        decoding="async"
                         onclick="openImagePreview('${encodedPhoto}')"
                         onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\"verification-empty\" style=\"padding:30px;\"><i class=\"fa-solid fa-image\"></i><div>Profile picture could not be loaded.</div></div>';"
                       />
@@ -7624,6 +8229,7 @@
 
 
     function refreshVerificationCardDetails(request) {
+
       const card =
         $("verification-card-" + request.id);
 
@@ -7632,30 +8238,39 @@
       const video =
         card.querySelector("video");
 
-      const oldVideoUrl =
-        video?.dataset?.videoSrc || "";
-
       const newVideoUrl =
         getVerificationVideoUrl(request);
 
-      const oldPhoto =
-        card
-          .querySelector(".verification-photo")
-          ?.getAttribute("src") || "";
+      if (video && newVideoUrl) {
+        video.dataset.videoSrc = newVideoUrl;
 
-      const newPhoto =
-        getVerificationProfilePhoto(request);
-
-      if (
-        oldVideoUrl !== newVideoUrl ||
-        oldPhoto !== newPhoto
-      ) {
-        card.outerHTML =
-          verificationCardHtml(request);
-        return true;
+        if (
+          !video.getAttribute("poster") &&
+          getVerificationProfilePhoto(request)
+        ) {
+          video.setAttribute(
+            "poster",
+            getVerificationProfilePhoto(request)
+          );
+        }
       }
 
-      return false;
+      const photo =
+        getVerificationProfilePhoto(request);
+
+      const photoElement =
+        card.querySelector(".verification-photo");
+
+      if (photo && photoElement) {
+        const existing =
+          photoElement.getAttribute("src") || "";
+
+        if (existing !== photo) {
+          photoElement.setAttribute("src", photo);
+        }
+      }
+
+      return true;
     }
 
 
@@ -7711,7 +8326,7 @@
               )} more
             </button>
             <span>
-              Showing ${shown} of ${pending.length} loaded requests
+              Showing ${shown} of ${pending.length} recent pending requests
             </span>
           </div>
         `
@@ -7826,6 +8441,10 @@
       verificationRequests =
         normalizedNext;
 
+      void loadVerificationProfiles(
+        normalizedNext
+      );
+
       if (
         !verificationHasRendered ||
         !$("verificationTable")
@@ -7879,52 +8498,136 @@
         return;
       }
 
-      const pendingVerificationQuery =
-        query(
-          collection(
-            db,
-            "verification_requests"
-          ),
-          where(
-            "status",
-            "==",
-            "pending"
-          ),
-          limit(
-            VERIFICATION_QUERY_LIMIT
-          )
-        );
+      const buildQuery =
+        (timestampField = "submittedAt") =>
+          query(
+            collection(
+              db,
+              "verification_requests"
+            ),
+            where(
+              "status",
+              "==",
+              "pending"
+            ),
+            orderBy(
+              timestampField,
+              "desc"
+            ),
+            limit(
+              VERIFICATION_QUERY_LIMIT
+            )
+          );
 
-      verificationRequestsUnsubscribe =
-        onSnapshot(
-          pendingVerificationQuery,
-          (snapshot) => {
+      let activeField = "submittedAt";
 
-            const nextRequests =
-              snapshot.docs.map(
-                (docSnapshot) => ({
-                  id:
-                    docSnapshot.id,
-                  ...docSnapshot.data()
-                })
+      const attach = (verificationQuery) => {
+        verificationRequestsUnsubscribe =
+          onSnapshot(
+            verificationQuery,
+            (snapshot) => {
+
+              const nextRequests =
+                snapshot.docs
+                  .map(
+                    (docSnapshot) => ({
+                      id: docSnapshot.id,
+                      ...docSnapshot.data()
+                    })
+                  )
+                  .sort(
+                    (a, b) =>
+                      (
+                        toDate(
+                          getVerificationSubmittedValue(b)
+                        )?.getTime() || 0
+                      ) -
+                      (
+                        toDate(
+                          getVerificationSubmittedValue(a)
+                        )?.getTime() || 0
+                      )
+                  );
+
+              reconcileVerificationRequests(
+                nextRequests
               );
 
-            reconcileVerificationRequests(
-              nextRequests
-            );
+              void loadVerificationProfiles(
+                nextRequests
+              );
 
-            writeCache(
-              "verification",
-              verificationRequests.slice(0, VERIFICATION_QUERY_LIMIT)
-            );
-          },
-          (error) => {
-            console.error(
-              "Verification realtime listener:",
-              error
-            );
-          }
-        );
+              writeCache(
+                "verification",
+                nextRequests.slice(0, VERIFICATION_QUERY_LIMIT)
+              );
+            },
+            (error) => {
+              console.error(
+                "Verification realtime listener:",
+                error
+              );
+
+              // Some projects use createdAt instead of submittedAt.
+              // Re-attach once with that field if the first ordering fails.
+              if (
+                activeField === "submittedAt" &&
+                verificationRequestsUnsubscribe
+              ) {
+                const previous =
+                  verificationRequestsUnsubscribe;
+                verificationRequestsUnsubscribe = null;
+                try { previous(); } catch (_) {}
+                activeField = "createdAt";
+                attach(buildQuery("createdAt"));
+                return;
+              }
+
+              if (activeField === "createdAt") {
+                const previous =
+                  verificationRequestsUnsubscribe;
+                verificationRequestsUnsubscribe = null;
+                try { previous?.(); } catch (_) {}
+
+                verificationRequestsUnsubscribe =
+                  onSnapshot(
+                    query(
+                      collection(db, "verification_requests"),
+                      where("status", "==", "pending"),
+                      limit(VERIFICATION_QUERY_LIMIT)
+                    ),
+                    (fallbackSnapshot) => {
+                      const nextRequests =
+                        fallbackSnapshot.docs
+                          .map((docSnapshot) => ({
+                            id: docSnapshot.id,
+                            ...docSnapshot.data()
+                          }))
+                          .sort((a, b) =>
+                            (toDate(getVerificationSubmittedValue(b))?.getTime() || 0) -
+                            (toDate(getVerificationSubmittedValue(a))?.getTime() || 0)
+                          );
+
+                      reconcileVerificationRequests(nextRequests);
+                      void loadVerificationProfiles(nextRequests);
+                      writeCache(
+                        "verification",
+                        nextRequests.slice(0, VERIFICATION_QUERY_LIMIT)
+                      );
+                    },
+                    (fallbackError) => {
+                      console.error(
+                        "Verification unordered realtime fallback failed:",
+                        fallbackError
+                      );
+                    }
+                  );
+              }
+            }
+          );
+      };
+
+      attach(buildQuery(activeField));
     }
 
 
@@ -7942,7 +8645,7 @@
         $("verificationTable").innerHTML = `
           <div class="verification-empty">
             <i class="fa-solid fa-spinner fa-spin"></i>
-            <div>Loading verification requests...</div>
+            <div>Loading latest verification requests...</div>
           </div>
         `;
       } else {
@@ -7956,51 +8659,102 @@
         verificationVisibleLimit =
           VERIFICATION_RENDER_LIMIT;
 
-        const pendingVerificationQuery =
-          query(
-            collection(
-              db,
-              "verification_requests"
-            ),
-            where(
-              "status",
-              "==",
-              "pending"
-            ),
-            limit(
-              VERIFICATION_QUERY_LIMIT
-            )
+        let snapshot;
+
+        try {
+          snapshot =
+            await withTimeout(
+              getDocs(
+                query(
+                  collection(db, "verification_requests"),
+                  where("status", "==", "pending"),
+                  orderBy("submittedAt", "desc"),
+                  limit(VERIFICATION_QUERY_LIMIT)
+                )
+              ),
+              12000,
+              "Verification loading timed out."
+            );
+        } catch (submittedError) {
+          console.warn(
+            "submittedAt verification query failed; trying createdAt.",
+            submittedError
           );
 
-        const snapshotPromise =
-          getDocs(
-            pendingVerificationQuery
-          );
+          try {
+            snapshot =
+              await withTimeout(
+                getDocs(
+                  query(
+                    collection(db, "verification_requests"),
+                    where("status", "==", "pending"),
+                    orderBy("createdAt", "desc"),
+                    limit(VERIFICATION_QUERY_LIMIT)
+                  )
+                ),
+                12000,
+                "Verification loading timed out."
+              );
+          } catch (createdError) {
+            // Last fallback: keep the old query behavior so the queue can
+            // still work in databases that have no timestamp on older docs.
+            snapshot =
+              await withTimeout(
+                getDocs(
+                  query(
+                    collection(db, "verification_requests"),
+                    where("status", "==", "pending"),
+                    limit(VERIFICATION_QUERY_LIMIT)
+                  )
+                ),
+                12000,
+                "Verification loading timed out."
+              );
+          }
+        }
+
+        const nextRequests =
+          snapshot.docs
+            .map(
+              (docSnapshot) => ({
+                id: docSnapshot.id,
+                ...docSnapshot.data()
+              })
+            )
+            .sort(
+              (a, b) =>
+                (
+                  toDate(
+                    getVerificationSubmittedValue(b)
+                  )?.getTime() || 0
+                ) -
+                (
+                  toDate(
+                    getVerificationSubmittedValue(a)
+                  )?.getTime() || 0
+                )
+            );
+
+        reconcileVerificationRequests(
+          nextRequests
+        );
+
+        // Fetch actual user profiles separately so profile pictures still
+        // appear even when Users has never been opened in this session.
+        void loadVerificationProfiles(
+          nextRequests
+        );
 
         const totalPromise =
           refreshTotal
             ? loadTotalPendingVerificationCount()
             : Promise.resolve();
 
-        const [snapshot] =
-          await Promise.all([
-            snapshotPromise,
-            totalPromise
-          ]);
-
-        reconcileVerificationRequests(
-          snapshot.docs.map(
-            (docSnapshot) => ({
-              id:
-                docSnapshot.id,
-              ...docSnapshot.data()
-            })
-          )
-        );
+        await totalPromise;
 
         writeCache(
           "verification",
-          verificationRequests.slice(0, VERIFICATION_QUERY_LIMIT)
+          nextRequests.slice(0, VERIFICATION_QUERY_LIMIT)
         );
 
         verificationHasRendered = true;
