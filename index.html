@@ -821,48 +821,6 @@
       color: var(--muted);
     }
 
-    .table-footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      flex-wrap: wrap;
-      padding: 12px 14px;
-      border-top: 1px solid var(--border);
-      background: #fbfcfe;
-    }
-
-    .table-footer-info {
-      color: var(--muted);
-      font-size: 11px;
-      line-height: 1.45;
-    }
-
-    .load-more-button {
-      min-width: 130px;
-    }
-
-    .soft-loading {
-      opacity: .62;
-      pointer-events: none;
-    }
-
-    .inline-progress {
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      color: var(--muted);
-      font-size: 11px;
-    }
-
-    .card-header-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-
     /* =========================================================
        TOOLBAR
     ========================================================== */
@@ -1247,7 +1205,7 @@
     }
 
     .verification-card-actions {
-      display: none;
+      display: flex;
       justify-content: flex-end;
       align-items: center;
       gap: 9px;
@@ -1255,17 +1213,6 @@
       padding: 14px 18px;
       border-top: 1px solid var(--border);
       background: #fbfcfe;
-    }
-
-    .verification-desktop-actions {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 12px;
-    }
-
-    .verification-desktop-actions .btn {
-      flex: 1 1 180px;
     }
 
     .verification-empty {
@@ -1304,14 +1251,6 @@
       .verification-video,
       .verification-photo-wrap {
         height: 380px;
-      }
-
-      .verification-desktop-actions {
-        display: none;
-      }
-
-      .verification-card-actions {
-        display: flex;
       }
     }
 
@@ -2304,7 +2243,7 @@
                 <div class="card-header">
                   <div>
                     <h3>User Growth</h3>
-                    <span>Last 30 days · cached sample</span>
+                    <span>Last 30 days</span>
                   </div>
                 </div>
 
@@ -2534,20 +2473,6 @@
 
               </div>
 
-              <div class="table-footer" id="usersTableFooter">
-                <div class="table-footer-info" id="usersPageInfo">
-                  Showing 0 users
-                </div>
-                <button
-                  id="loadMoreUsersButton"
-                  class="btn btn-outline btn-sm load-more-button"
-                  type="button"
-                  disabled
-                >
-                  Load More
-                </button>
-              </div>
-
             </div>
 
           </div>
@@ -2668,20 +2593,6 @@
 
                 </table>
 
-              </div>
-
-              <div class="table-footer" id="reportsTableFooter">
-                <div class="table-footer-info" id="reportsPageInfo">
-                  Showing 0 reports
-                </div>
-                <button
-                  id="loadMoreReportsButton"
-                  class="btn btn-outline btn-sm load-more-button"
-                  type="button"
-                  disabled
-                >
-                  Load More
-                </button>
               </div>
 
             </div>
@@ -3468,9 +3379,7 @@
       orderBy,
       limit,
       where,
-      Timestamp,
-      documentId,
-      startAfter
+      Timestamp
     } from
       "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -3530,7 +3439,6 @@
     let allUsers = [];
 
     let filteredUsers = [];
-    let recentUsers = [];
 
     let reports = [];
 
@@ -3563,7 +3471,6 @@
     let currentModalUid = null;
 
     let confirmCallback = null;
-    let confirmActionButtonBusy = false;
 
     let userGrowthChart = null;
 
@@ -3574,51 +3481,6 @@
     let imageOffsetX = 0;
 
     let imageOffsetY = 0;
-
-    // ============================================================
-    // PERFORMANCE STATE
-    // ============================================================
-    const USER_PAGE_SIZE = 40;
-    const USER_SEARCH_RESULT_BATCH = 120;
-    const USER_SEARCH_SCAN_PAGE = 120;
-    const USER_SEARCH_MAX_PAGES_PER_REQUEST = 6;
-    const USER_CACHE_LIMIT = 120;
-
-    const REPORT_PAGE_SIZE = 40;
-    const REPORT_SEARCH_RESULT_BATCH = 120;
-    const REPORT_SEARCH_SCAN_PAGE = 120;
-    const REPORT_SEARCH_MAX_PAGES_PER_REQUEST = 6;
-    const REPORT_CACHE_LIMIT = 120;
-
-    const ACTION_TIMEOUT_MS = 12000;
-
-    let userPageCursor = null;
-    let userHasMore = true;
-    let usersLoading = false;
-    let usersInitialized = false;
-    let userTotalCount = null;
-
-    let reportPageCursor = null;
-    let reportHasMore = true;
-    let reportsLoading = false;
-    let reportsInitialized = false;
-    let reportTotalCount = null;
-
-    let dashboardInitialized = false;
-    let dashboardActiveCountLoaded = false;
-    let configInitialized = false;
-
-    const reportUserCache = new Map();
-    const reportUserFetchInFlight = new Set();
-
-    const verificationProfileCache = new Map();
-    const verificationProfileFetchInFlight = new Set();
-
-    let filterSearchTimer = null;
-    let userSearchTimer = null;
-    let reportSearchTimer = null;
-    let userSearchQueued = false;
-    let reportSearchQueued = false;
 
 
     /* ==========================================================
@@ -3664,37 +3526,6 @@
       setTimeout(() => {
         toast.remove();
       }, 3500);
-    }
-
-
-    async function withTimeout(
-      promise,
-      milliseconds = ACTION_TIMEOUT_MS,
-      timeoutMessage = "The request took too long. Check your connection and try again."
-    ) {
-
-      let timer = null;
-
-      try {
-
-        return await Promise.race([
-          promise,
-          new Promise((_, reject) => {
-            timer = setTimeout(
-              () => reject(new Error(timeoutMessage)),
-              milliseconds
-            );
-          })
-        ]);
-
-      } finally {
-
-        if (timer) {
-          clearTimeout(timer);
-        }
-
-      }
-
     }
 
 
@@ -3853,9 +3684,6 @@
         user.image ||
         user.profileImage ||
         user.profileImageUrl ||
-        user.profilePhoto ||
-        user.avatar ||
-        user.avatarUrl ||
         ""
       );
     }
@@ -3911,28 +3739,6 @@
         user.lastSeen ||
         user.updatedAt ||
         user.createdAt ||
-        null
-      );
-    }
-
-
-    function getUserCreatedAt(user) {
-      return (
-        user.createdAt ||
-        user.created_at ||
-        user.registeredAt ||
-        user.joinedAt ||
-        null
-      );
-    }
-
-
-    function getReportCreatedAt(report) {
-      return (
-        report.createdAt ||
-        report.created_at ||
-        report.reportedAt ||
-        report.timestamp ||
         null
       );
     }
@@ -4167,7 +3973,7 @@
 
 
     window.showPage =
-      function(page) {
+      async function(page) {
 
         const appShell =
           document.querySelector(".app-shell");
@@ -4207,32 +4013,36 @@
           pageMeta[page];
 
         if (meta) {
-          $("pageTitle").textContent = meta.title;
-          $("pageSubtitle").textContent = meta.subtitle;
+
+          $("pageTitle")
+            .textContent =
+            meta.title;
+
+          $("pageSubtitle")
+            .textContent =
+            meta.subtitle;
         }
 
         closeSidebarMobile();
 
-        // Do not block navigation while data is being fetched.
-        if (page === "users" && !usersInitialized && !usersLoading) {
-          void loadUsers({ reset: true });
+        if (page === "users") {
+          await loadUsers();
         }
 
-        if (page === "reports" && !reportsInitialized && !reportsLoading) {
-          void loadReports({ reset: true });
+        if (page === "reports") {
+          await loadReports();
         }
 
         if (page === "verification" && !verificationHasRendered) {
-          void loadVerificationRequests();
+          await loadVerificationRequests();
         }
 
-        if (page === "config" && !configInitialized) {
-          void loadAppConfig({ silent: hydrateAppConfigCache() });
+        if (page === "config") {
+          await loadAppConfig();
         }
 
-        if (page === "dashboard" && !dashboardInitialized) {
-          dashboardInitialized = true;
-          void refreshDashboard({ silent: true });
+        if (page === "dashboard") {
+          await refreshDashboard();
         }
 
       };
@@ -4430,46 +4240,29 @@
 
     async function initializeAdmin() {
 
-      // Never wait for large collections before showing the admin UI.
-      // Cached content is painted first; Firebase work continues silently.
       const hasUsers = hydrateUsersCache();
       const hasReports = hydrateReportsCache();
       const hasVerification = hydrateVerificationCache();
       const hasConfig = hydrateAppConfigCache();
 
-      // Cache is for instant painting only. The page still fetches a fresh
-      // first page when the admin opens Users/Reports.
-      usersInitialized = false;
-      reportsInitialized = false;
-      configInitialized = hasConfig;
-      dashboardInitialized = true;
+      // Cached data appears immediately. Firebase refreshes silently afterwards.
+      await Promise.allSettled([
+        loadUsers({ silent: hasUsers }),
+        loadReports({ silent: hasReports }),
+        loadVerificationRequests({ silent: hasVerification }),
+        loadTotalPendingVerificationCount(),
+        loadAppConfig({ silent: hasConfig }),
+        loadAnnouncements()
+      ]);
 
-      showSyncStatus("Connecting…");
+      await refreshDashboard();
+      renderCharts();
 
-      // Small, independent tasks. None of these blocks navigation.
-      void refreshDashboard({ silent: true });
-      void loadRecentUsers({ silent: true });
-      void loadTotalPendingVerificationCount();
-      void loadAppConfig({ silent: hasConfig });
-      void loadAnnouncements();
-
-      // Verification realtime is limited to the pending queue only.
+      // Keep the verification queue live while the admin panel is open.
       startVerificationRequestsRealtime();
-
-      // Do not pre-load the entire Users/Reports collections.
-      // Their first page is fetched only when the admin opens the page.
-      if (hasUsers) {
-        updateUsersPaginationUi();
-      }
-      if (hasReports) {
-        updateReportsPaginationUi();
-      }
-
     }
 
 
-    /* ==========================================================
-       PERSISTENT CACHE / SILENT REFRESH
     /* ==========================================================
        PERSISTENT CACHE / SILENT REFRESH
     =========================================================== */
@@ -4545,317 +4338,102 @@
     }
 
     function hydrateUsersCache() {
-
       const entry = readCache("users");
-
-      if (!entry || !Array.isArray(entry.data)) {
-        return false;
-      }
-
-      // Older versions could cache thousands of users and make startup
-      // itself slow. Keep only a small, useful local warm cache.
-      allUsers = entry.data.slice(0, USER_CACHE_LIMIT);
-
+      if (!entry || !Array.isArray(entry.data)) return false;
+      allUsers = entry.data;
       applyUserFilters();
       renderRecentUsers();
       updateUserStats();
-      return allUsers.length > 0;
-
+      return true;
     }
 
-
     function hydrateReportsCache() {
-
       const entry = readCache("reports");
-
-      if (!entry || !Array.isArray(entry.data)) {
-        return false;
-      }
-
-      reports = entry.data.slice(0, REPORT_CACHE_LIMIT);
+      if (!entry || !Array.isArray(entry.data)) return false;
+      reports = entry.data;
       groupReports();
       renderReportsTable();
       updateReportStats();
-      return reports.length > 0;
-
+      return true;
     }
 
+    function hydrateVerificationCache() {
+      const entry = readCache("verification");
+      if (!entry || !Array.isArray(entry.data)) return false;
 
-    /* ==========================================================
-       USERS
+      verificationRequests = entry.data
+        .filter(
+          (request) =>
+            getVerificationStatus(request) === "pending"
+        )
+        .slice(0, VERIFICATION_QUERY_LIMIT);
+
+      verificationVisibleLimit = VERIFICATION_RENDER_LIMIT;
+      renderVerificationTable();
+      verificationHasRendered = true;
+      return verificationRequests.length > 0;
+    }
+
+    function hydrateAppConfigCache() {
+      const entry = readCache("app_config");
+      if (!entry || !entry.data) return false;
+      fillAppConfig(entry.data);
+      return true;
+    }
+
     /* ==========================================================
        USERS
     =========================================================== */
 
-    async function refreshUserTotalCount() {
+    async function loadUsers({ silent = false } = {}) {
+
+      if (!silent) {
+        $("allUsersTable").innerHTML = `
+          <tr>
+            <td colspan="7" class="loading-row">
+              <i class="fa-solid fa-spinner fa-spin"></i>
+              Loading users...
+            </td>
+          </tr>
+        `;
+      } else {
+        showSyncStatus("Refreshing users…");
+      }
 
       try {
-        const countSnapshot =
-          await getCountFromServer(collection(db, "users"));
 
-        userTotalCount = countSnapshot.data().count;
-
-        $("statTotalUsers").textContent =
-          Number(userTotalCount).toLocaleString();
-
-        updateUsersPaginationUi();
-
-      } catch (error) {
-        console.warn("User count:", error);
-
-        if (userTotalCount === null) {
-          $("statTotalUsers").textContent =
-            allUsers.length.toLocaleString();
-        }
-      }
-
-    }
-
-
-    function userMatchesSearchAndFilter(user) {
-
-      if (
-        currentUserSearch
-      ) {
-
-        const search =
-          currentUserSearch.toLowerCase();
-
-        const values = [
-          getUserName(user),
-          getUserEmail(user),
-          user.uid,
-          user.gender,
-          getUserLocation(user),
-          user.city,
-          user.state,
-          user.country
-        ];
-
-        const matchesSearch =
-          values.some(
-            (value) =>
-              String(value || "")
-                .toLowerCase()
-                .includes(search)
+        const snapshot =
+          await getDocs(
+            collection(db, "users")
           );
-
-        if (!matchesSearch) {
-          return false;
-        }
-      }
-
-      if (
-        currentUserFilter === "premium" &&
-        !isPremiumUser(user)
-      ) {
-        return false;
-      }
-
-      if (
-        currentUserFilter === "normal" &&
-        isPremiumUser(user)
-      ) {
-        return false;
-      }
-
-      return true;
-    }
-
-
-    function normalizeUserDoc(documentSnapshot) {
-
-      const data =
-        documentSnapshot.data();
-
-      return {
-        ...data,
-        uid:
-          data.uid ||
-          documentSnapshot.id
-      };
-    }
-
-
-    async function loadUsers({
-      reset = true,
-      silent = false
-    } = {}) {
-
-      if (usersLoading) {
-        return;
-      }
-
-      if (
-        !reset &&
-        !userHasMore
-      ) {
-        return;
-      }
-
-      usersLoading = true;
-
-      const button =
-        $("loadMoreUsersButton");
-
-      const refreshButton =
-        $("refreshUsersButton");
-
-      const searchMode =
-        Boolean(currentUserSearch);
-
-      const targetMatches =
-        searchMode
-          ? USER_SEARCH_RESULT_BATCH
-          : USER_PAGE_SIZE;
-
-      let addedThisRequest = 0;
-      let pagesRead = 0;
-
-      if (reset) {
-        userPageCursor = null;
-        userHasMore = true;
-
-        if (!searchMode) {
-          if (!silent && !allUsers.length) {
-            $("allUsersTable").innerHTML = `
-              <tr>
-                <td colspan="7" class="loading-row">
-                  <i class="fa-solid fa-spinner fa-spin"></i>
-                  Loading latest users...
-                </td>
-              </tr>
-            `;
-          } else {
-            showSyncStatus("Refreshing latest users…");
-            $("allUsersTable").classList.add("soft-loading");
-          }
-        } else {
-          $("allUsersTable").innerHTML = `
-            <tr>
-              <td colspan="7" class="loading-row">
-                <i class="fa-solid fa-spinner fa-spin"></i>
-                Searching latest users…
-              </td>
-            </tr>
-          `;
-        }
 
         allUsers = [];
-      } else if (button) {
-        button.disabled = true;
-        button.innerHTML = `
-          <i class="fa-solid fa-spinner fa-spin"></i>
-          Loading…
-        `;
-      }
 
-      if (refreshButton) {
-        refreshButton.disabled = true;
-      }
+        snapshot.forEach(
+          (documentSnapshot) => {
 
-      try {
+            const data =
+              documentSnapshot.data();
 
-        do {
+            allUsers.push({
+              ...data,
+              uid:
+                data.uid ||
+                documentSnapshot.id
+            });
 
-          // The users page is always ordered by account creation time.
-          // This makes every page and every Load More continuation recent-first.
-          const pageLimit =
-            searchMode
-              ? USER_SEARCH_SCAN_PAGE
-              : USER_PAGE_SIZE;
-
-          const constraints = [
-            orderBy("createdAt", "desc"),
-            limit(pageLimit)
-          ];
-
-          if (userPageCursor) {
-            constraints.push(
-              startAfter(userPageCursor)
-            );
           }
-
-          const snapshot =
-            await withTimeout(
-              getDocs(
-                query(
-                  collection(db, "users"),
-                  ...constraints
-                )
-              ),
-              15000,
-              "Loading users timed out. Please try again."
-            );
-
-          snapshot.forEach(
-            (documentSnapshot) => {
-
-              const user =
-                normalizeUserDoc(documentSnapshot);
-
-              if (
-                !searchMode ||
-                userMatchesSearchAndFilter(user)
-              ) {
-                allUsers.push(user);
-                addedThisRequest += 1;
-              }
-            }
-          );
-
-          userPageCursor =
-            snapshot.docs.length
-              ? snapshot.docs[snapshot.docs.length - 1]
-              : userPageCursor;
-
-          userHasMore =
-            snapshot.docs.length === pageLimit;
-
-          pagesRead += 1;
-
-          // Search mode intentionally scans recent pages until up to 120
-          // matching results are available, or the collection is exhausted.
-        } while (
-          searchMode &&
-          userHasMore &&
-          addedThisRequest < targetMatches &&
-          pagesRead < USER_SEARCH_MAX_PAGES_PER_REQUEST
         );
 
-        usersInitialized = true;
-
-        // The query itself is recent-first, so retain that order. This
-        // client sort only protects ties / cached data and never reverses it.
-        allUsers.sort(
-          (a, b) =>
-            (
-              toDate(getUserCreatedAt(b))?.getTime() || 0
-            ) -
-            (
-              toDate(getUserCreatedAt(a))?.getTime() || 0
-            )
-        );
-
-        applyUserFilters();
-        renderRecentUsers();
-        updateUserStats();
-
-        writeCache(
-          "users",
-          allUsers
-            .slice(0, USER_CACHE_LIMIT)
-            .map(compactUserForCache)
-        );
 
         saveUsersCache();
+        writeCache("users", allUsers.slice(0, 5000).map(compactUserForCache));
 
-        if (
-          reset &&
-          userTotalCount === null
-        ) {
-          void refreshUserTotalCount();
-        }
+        applyUserFilters();
+
+        renderRecentUsers();
+
+        updateUserStats();
 
       } catch (error) {
 
@@ -4864,136 +4442,30 @@
           error
         );
 
-        // Keep the old pagination query as a fallback only when the recent
-        // createdAt query itself cannot be executed.
-        try {
-          if (
-            String(error?.message || "")
-              .toLowerCase()
-              .includes("createdat")
-          ) {
-            const fallbackConstraints = [
-              orderBy(documentId(), "desc"),
-              limit(USER_PAGE_SIZE)
-            ];
-
-            if (userPageCursor) {
-              fallbackConstraints.push(
-                startAfter(userPageCursor)
-              );
-            }
-
-            const fallbackSnapshot =
-              await getDocs(
-                query(
-                  collection(db, "users"),
-                  ...fallbackConstraints
-                )
-              );
-
-            if (reset) {
-              allUsers = [];
-            }
-
-            fallbackSnapshot.forEach(
-              (documentSnapshot) => {
-                const user =
-                  normalizeUserDoc(documentSnapshot);
-
-                if (
-                  !searchMode ||
-                  userMatchesSearchAndFilter(user)
-                ) {
-                  allUsers.push(user);
-                  addedThisRequest += 1;
-                }
-              }
-            );
-
-            userPageCursor =
-              fallbackSnapshot.docs.length
-                ? fallbackSnapshot.docs[fallbackSnapshot.docs.length - 1]
-                : userPageCursor;
-
-            userHasMore =
-              fallbackSnapshot.docs.length === USER_PAGE_SIZE;
-
-            allUsers.sort(
-              (a, b) =>
-                (
-                  toDate(getUserCreatedAt(b))?.getTime() || 0
-                ) -
-                (
-                  toDate(getUserCreatedAt(a))?.getTime() || 0
-                )
-            );
-
-            applyUserFilters();
-            renderRecentUsers();
-            updateUserStats();
-            return;
-          }
-        } catch (fallbackError) {
-          console.error(
-            "loadUsers fallback:",
-            fallbackError
-          );
-        }
-
-        if (!allUsers.length) {
+        if (!silent) {
           $("allUsersTable").innerHTML = `
             <tr>
               <td colspan="7">
                 <div class="empty-state">
                   <i class="fa-solid fa-triangle-exclamation"></i>
-                  <div>Failed to load users.</div>
-                  <small>${escapeHtml(error.message)}</small>
+                  <div>
+                    Failed to load users.
+                  </div>
+                  <small>
+                    ${escapeHtml(error.message)}
+                  </small>
                 </div>
               </td>
             </tr>
           `;
+          showToast(
+            "Failed to load users.",
+            "error"
+          );
         }
-
-        showToast(
-          "Could not load users: " +
-          error.message,
-          "error"
-        );
 
       } finally {
-
-        usersLoading = false;
-
-        $("allUsersTable")
-          .classList
-          .remove("soft-loading");
-
-        if (refreshButton) {
-          refreshButton.disabled = false;
-        }
-
-        if (button) {
-          button.disabled =
-            !userHasMore;
-          button.innerHTML = `
-            <i class="fa-solid fa-plus"></i>
-            ${userHasMore ? "Load More" : "All Loaded"}
-          `;
-        }
-
         hideSyncStatus();
-        updateUsersPaginationUi();
-
-        if (userSearchQueued) {
-          userSearchQueued = false;
-          window.clearTimeout(userSearchTimer);
-          userSearchTimer = window.setTimeout(() => {
-            if (!usersLoading) {
-              void loadUsers({ reset: true, silent: false });
-            }
-          }, 0);
-        }
-
       }
 
     }
@@ -5003,73 +4475,14 @@
 
       try {
 
-        // Keep the legacy cache tiny too, so old versions cannot leave a
-        // multi-megabyte startup payload behind.
         localStorage.setItem(
           "masoya_admin_users_cache",
           JSON.stringify(
-            allUsers
-              .slice(0, USER_CACHE_LIMIT)
-              .map(compactUserForCache)
+            allUsers.slice(0, 1000)
           )
         );
 
       } catch (_) {}
-
-    }
-
-
-    function updateUsersPaginationUi() {
-
-      const info =
-        $("usersPageInfo");
-
-      const button =
-        $("loadMoreUsersButton");
-
-      const shown =
-        filteredUsers.length;
-
-      const loaded =
-        allUsers.length;
-
-      const total =
-        Number.isFinite(userTotalCount)
-          ? Number(userTotalCount)
-          : null;
-
-      if (info) {
-
-        info.textContent =
-          currentUserSearch
-            ? `${loaded.toLocaleString()} matching users loaded · newest first`
-            : total !== null
-              ? `Loaded ${loaded.toLocaleString()} of ${total.toLocaleString()} users · newest first`
-              : `Loaded ${loaded.toLocaleString()} user${loaded === 1 ? "" : "s"} · newest first`;
-
-      }
-
-      if (button) {
-        button.disabled =
-          usersLoading ||
-          !userHasMore;
-
-        if (!usersLoading) {
-          button.innerHTML = `
-            <i class="fa-solid fa-plus"></i>
-            ${userHasMore ? "Load More" : "All Loaded"}
-          `;
-        }
-      }
-
-      if ($("userCountLabel")) {
-        $("userCountLabel").textContent =
-          currentUserSearch
-            ? `${shown.toLocaleString()} search results · newest first`
-            : total !== null
-              ? `${shown.toLocaleString()} shown · ${total.toLocaleString()} total`
-              : `${shown.toLocaleString()} loaded`;
-      }
 
     }
 
@@ -5079,33 +4492,86 @@
       let result =
         [...allUsers];
 
-      if (currentUserSearch) {
-        result = result.filter(
-          (user) =>
-            userMatchesSearchAndFilter(user)
-        );
-      } else if (currentUserFilter === "premium") {
-        result = result.filter(isPremiumUser);
-      } else if (currentUserFilter === "normal") {
-        result = result.filter(
-          (user) => !isPremiumUser(user)
-        );
+
+      /* SEARCH */
+
+      if (
+        currentUserSearch
+      ) {
+
+        const search =
+          currentUserSearch
+            .toLowerCase();
+
+        result =
+          result.filter(
+            (user) => {
+
+              const values = [
+
+                getUserName(user),
+
+                getUserEmail(user),
+
+                user.uid,
+
+                user.gender,
+
+                getUserLocation(user),
+
+                user.city,
+
+                user.state,
+
+                user.country
+
+              ];
+
+              return values.some(
+                (value) =>
+                  String(
+                    value || ""
+                  )
+                    .toLowerCase()
+                    .includes(search)
+              );
+
+            }
+          );
+
       }
 
-      result.sort(
-        (a, b) =>
-          (
-            toDate(getUserCreatedAt(b))?.getTime() || 0
-          ) -
-          (
-            toDate(getUserCreatedAt(a))?.getTime() || 0
-          )
-      );
 
-      filteredUsers = result;
+      /* FILTER */
+
+      if (
+        currentUserFilter ===
+        "premium"
+      ) {
+
+        result =
+          result.filter(
+            isPremiumUser
+          );
+
+      } else if (
+        currentUserFilter ===
+        "normal"
+      ) {
+
+        result =
+          result.filter(
+            (user) =>
+              !isPremiumUser(user)
+          );
+
+      }
+
+
+      filteredUsers =
+        result;
 
       renderUsersTable();
-      updateUsersPaginationUi();
 
     }
 
@@ -5115,7 +4581,14 @@
       const tbody =
         $("allUsersTable");
 
-      updateUsersPaginationUi();
+      $("userCountLabel")
+        .textContent =
+        `${filteredUsers.length} user${
+          filteredUsers.length === 1
+            ? ""
+            : "s"
+        }`;
+
 
       if (!filteredUsers.length) {
 
@@ -5125,13 +4598,8 @@
               <div class="empty-state">
                 <i class="fa-solid fa-users-slash"></i>
                 <div>
-                  ${currentUserSearch || currentUserFilter !== "all"
-                    ? "No loaded users match this filter."
-                    : "No users found."}
+                  No users found.
                 </div>
-                <small>
-                  ${userHasMore ? "Load More continues from the newest-to-oldest position." : "There are no more matching users."}
-                </small>
               </div>
             </td>
           </tr>
@@ -5140,8 +4608,33 @@
         return;
       }
 
+
       const sorted =
-        [...filteredUsers];
+        [...filteredUsers]
+          .sort(
+            (
+              a,
+              b
+            ) => {
+
+              const ad =
+                toDate(
+                  getLastActive(a)
+                );
+
+              const bd =
+                toDate(
+                  getLastActive(b)
+                );
+
+              return (
+                (bd?.getTime() || 0) -
+                (ad?.getTime() || 0)
+              );
+
+            }
+          );
+
 
       tbody.innerHTML =
         sorted
@@ -5153,6 +4646,7 @@
 
               return `
                 <tr>
+
                   <td>
                     ${userCellHtml(user)}
                   </td>
@@ -5185,7 +4679,9 @@
                   </td>
 
                   <td>
+
                     <div class="actions">
+
                       <button
                         class="btn btn-outline btn-sm"
                         onclick="viewProfile('${encodeURIComponent(uid)}')"
@@ -5209,8 +4705,11 @@
                         <i class="fa-solid fa-ban"></i>
                         Block
                       </button>
+
                     </div>
+
                   </td>
+
                 </tr>
               `;
 
@@ -5221,91 +4720,6 @@
     }
 
 
-    async function loadRecentUsers({ silent = true } = {}) {
-
-      try {
-
-        let snapshot;
-
-        try {
-          snapshot =
-            await getDocs(
-              query(
-                collection(db, "users"),
-                orderBy("createdAt", "desc"),
-                limit(10)
-              )
-            );
-        } catch (orderedError) {
-          console.warn(
-            "Recent users ordered query failed; using lightweight fallback.",
-            orderedError
-          );
-
-          snapshot =
-            await getDocs(
-              query(
-                collection(db, "users"),
-                orderBy(documentId(), "desc"),
-                limit(25)
-              )
-            );
-        }
-
-        recentUsers = [];
-
-        snapshot.forEach(
-          (documentSnapshot) => {
-            recentUsers.push(
-              normalizeUserDoc(documentSnapshot)
-            );
-          }
-        );
-
-        recentUsers.sort(
-          (a, b) =>
-            (
-              toDate(getUserCreatedAt(b))?.getTime() || 0
-            ) -
-            (
-              toDate(getUserCreatedAt(a))?.getTime() || 0
-            )
-        );
-
-        recentUsers =
-          recentUsers.slice(0, 10);
-
-        renderRecentUsers();
-        updateUserStats();
-
-      } catch (error) {
-
-        console.warn(
-          "Recent users:",
-          error
-        );
-
-        if (!silent) {
-          showToast(
-            "Could not refresh recent users.",
-            "warning"
-          );
-        }
-
-      }
-
-    }
-
-
-    function escapeSearchQuery(value) {
-      return String(value || "")
-        .trim()
-        .replace(/[\\"]/g, "");
-    }
-
-
-    /* ==========================================================
-       RECENT USERS
     /* ==========================================================
        RECENT USERS
     =========================================================== */
@@ -5315,33 +4729,16 @@
       const tbody =
         $("recentUsersTable");
 
-      const source =
-        recentUsers.length
-          ? recentUsers
-          : [...allUsers]
-              .sort(
-                (a, b) =>
-                  (
-                    toDate(
-                      getLastActive(b)
-                    )?.getTime() || 0
-                  ) -
-                  (
-                    toDate(
-                      getLastActive(a)
-                    )?.getTime() || 0
-                  )
-              )
-              .slice(0, 10);
-
-      if (!source.length) {
+      if (!allUsers.length) {
 
         tbody.innerHTML = `
           <tr>
             <td colspan="6">
               <div class="empty-state">
                 <i class="fa-solid fa-users"></i>
-                <div>No users available.</div>
+                <div>
+                  No users available.
+                </div>
               </div>
             </td>
           </tr>
@@ -5350,8 +4747,27 @@
         return;
       }
 
+
+      const users =
+        [...allUsers]
+          .sort(
+            (a, b) =>
+              (
+                toDate(
+                  getLastActive(b)
+                )?.getTime() || 0
+              ) -
+              (
+                toDate(
+                  getLastActive(a)
+                )?.getTime() || 0
+              )
+          )
+          .slice(0, 10);
+
+
       tbody.innerHTML =
-        source
+        users
           .map(
             (user) => {
 
@@ -5360,6 +4776,7 @@
 
               return `
                 <tr>
+
                   <td>
                     ${userCellHtml(user)}
                   </td>
@@ -5388,6 +4805,7 @@
                   </td>
 
                   <td>
+
                     <button
                       class="btn btn-outline btn-sm"
                       onclick="viewProfile('${encodeURIComponent(uid)}')"
@@ -5395,6 +4813,7 @@
                       <i class="fa-solid fa-eye"></i>
                       View
                     </button>
+
                   </td>
 
                 </tr>
@@ -5407,8 +4826,6 @@
     }
 
 
-    /* ==========================================================
-       UPDATE GENDER
     /* ==========================================================
        UPDATE GENDER
     =========================================================== */
@@ -5435,14 +4852,12 @@
             );
 
 
-          await withTimeout(
-            updateDoc(
-              userRef,
-              {
-                gender:
-                  gender || null
-              }
-            )
+          await updateDoc(
+            userRef,
+            {
+              gender:
+                gender || null
+            }
           );
 
 
@@ -5510,27 +4925,10 @@
         (event) => {
 
           currentUserSearch =
-            event.target.value.trim();
+            event.target.value
+              .trim();
 
-          window.clearTimeout(
-            userSearchTimer
-          );
-
-          userSearchTimer =
-            window.setTimeout(
-              () => {
-                if (usersLoading) {
-                  userSearchQueued = true;
-                  return;
-                }
-
-                void loadUsers({
-                  reset: true,
-                  silent: false
-                });
-              },
-              250
-            );
+          applyUserFilters();
 
         }
       );
@@ -5576,13 +4974,7 @@
     $("refreshUsersButton")
       .addEventListener(
         "click",
-        () => loadUsers({ reset: true })
-      );
-
-    $("loadMoreUsersButton")
-      .addEventListener(
-        "click",
-        () => loadUsers({ reset: false })
+        loadUsers
       );
 
 
@@ -5594,331 +4986,75 @@
 
       $("statTotalUsers")
         .textContent =
-        Number.isFinite(userTotalCount)
-          ? Number(userTotalCount).toLocaleString()
-          : allUsers.length.toLocaleString();
+        allUsers.length
+          .toLocaleString();
 
-      // Do not scan thousands of downloaded users. The count is exact
-      // whenever the backend has lastActiveAt for active sessions.
-      if (
-        !dashboardActiveCountLoaded &&
-        !allUsers.length
-      ) {
-        $("statActiveToday")
-          .textContent = "—";
-        return;
-      }
+      const activeToday =
+        allUsers.filter(
+          (user) =>
+            isToday(
+              getLastActive(user)
+            )
+        ).length;
 
-      if (!dashboardActiveCountLoaded) {
-        const activeToday =
-          allUsers.filter(
-            (user) =>
-              isToday(
-                getLastActive(user)
-              )
-          ).length;
 
-        $("statActiveToday")
-          .textContent =
-          activeToday.toLocaleString();
-      }
+      $("statActiveToday")
+        .textContent =
+        activeToday.toLocaleString();
 
     }
 
 
-    /* ==========================================================
-       REPORTS
     /* ==========================================================
        REPORTS
     =========================================================== */
 
-    async function refreshReportTotalCount() {
+    async function loadReports({ silent = false } = {}) {
 
-      try {
-
-        const countSnapshot =
-          await getCountFromServer(
-            collection(db, "reports")
-          );
-
-        reportTotalCount =
-          countSnapshot.data().count;
-
-        updateReportsPaginationUi();
-
-      } catch (error) {
-
-        console.warn(
-          "Report count:",
-          error
-        );
-
-      }
-
-    }
-
-
-    function reportGroupMatchesSearch(group, search) {
-      if (!search) return true;
-
-      const user =
-        getReportUser(group.uid);
-
-      return [
-        getUserName(user),
-        getUserEmail(user),
-        group.uid,
-        ...group.reasons
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(search);
-    }
-
-
-    async function enrichReportUsersByUids(uids) {
-
-      const unique =
-        Array.from(
-          new Set(
-            (uids || [])
-              .filter(Boolean)
-              .filter(
-                (uid) =>
-                  !reportUserCache.has(uid)
-              )
-          )
-        );
-
-      if (!unique.length) {
-        return;
-      }
-
-      const batches = [];
-
-      for (let index = 0; index < unique.length; index += 30) {
-        batches.push(
-          unique.slice(index, index + 30)
-        );
-      }
-
-      await Promise.all(
-        batches.map(
-          async (batchUids) => {
-            const allowed =
-              batchUids.filter(
-                (uid) =>
-                  !reportUserFetchInFlight.has(uid)
-              );
-
-            if (!allowed.length) return;
-
-            allowed.forEach(
-              (uid) =>
-                reportUserFetchInFlight.add(uid)
-            );
-
-            try {
-              const snapshot =
-                await withTimeout(
-                  getDocs(
-                    query(
-                      collection(db, "users"),
-                      where(
-                        documentId(),
-                        "in",
-                        allowed
-                      )
-                    )
-                  ),
-                  10000,
-                  "Loading report user details timed out."
-                );
-
-              snapshot.forEach(
-                (documentSnapshot) => {
-                  reportUserCache.set(
-                    documentSnapshot.id,
-                    normalizeUserDoc(documentSnapshot)
-                  );
-                }
-              );
-            } finally {
-              allowed.forEach(
-                (uid) =>
-                  reportUserFetchInFlight.delete(uid)
-              );
-            }
-          }
-        )
-      );
-    }
-
-
-    async function loadReports({
-      reset = true,
-      silent = false
-    } = {}) {
-
-      if (reportsLoading) {
-        return;
-      }
-
-      if (
-        !reset &&
-        !reportHasMore
-      ) {
-        return;
-      }
-
-      reportsLoading = true;
-
-      const button =
-        $("loadMoreReportsButton");
-
-      const refreshButton =
-        $("refreshReportsButton");
-
-      const searchMode =
-        Boolean(currentReportSearch);
-
-      const targetMatches =
-        searchMode
-          ? REPORT_SEARCH_RESULT_BATCH
-          : REPORT_PAGE_SIZE;
-
-      let pagesRead = 0;
-
-      if (reset) {
-        reportPageCursor = null;
-        reportHasMore = true;
-        reportTotalCount = null;
-        reports = [];
-        groupedReports = [];
-
+      if (!silent) {
         $("reportsTable").innerHTML = `
           <tr>
             <td colspan="7" class="loading-row">
               <i class="fa-solid fa-spinner fa-spin"></i>
-              ${searchMode ? "Searching latest reports…" : "Loading latest reports…"}
+              Loading reports...
             </td>
           </tr>
         `;
-      } else if (button) {
-        button.disabled = true;
-        button.innerHTML = `
-          <i class="fa-solid fa-spinner fa-spin"></i>
-          Loading…
-        `;
-      }
-
-      if (refreshButton) {
-        refreshButton.disabled = true;
+      } else {
+        showSyncStatus("Refreshing reports…");
       }
 
       try {
 
-        do {
-
-          const pageLimit =
-            searchMode
-              ? REPORT_SEARCH_SCAN_PAGE
-              : REPORT_PAGE_SIZE;
-
-          const constraints = [
-            orderBy("createdAt", "desc"),
-            limit(pageLimit)
-          ];
-
-          if (reportPageCursor) {
-            constraints.push(
-              startAfter(reportPageCursor)
-            );
-          }
-
-          const snapshot =
-            await withTimeout(
-              getDocs(
-                query(
-                  collection(db, "reports"),
-                  ...constraints
-                )
-              ),
-              15000,
-              "Loading reports timed out. Please try again."
-            );
-
-          snapshot.forEach(
-            (documentSnapshot) => {
-              reports.push({
-                id:
-                  documentSnapshot.id,
-                ...documentSnapshot.data()
-              });
-            }
+        const snapshot =
+          await getDocs(
+            collection(db, "reports")
           );
 
-          reportPageCursor =
-            snapshot.docs.length
-              ? snapshot.docs[snapshot.docs.length - 1]
-              : reportPageCursor;
 
-          reportHasMore =
-            snapshot.docs.length === pageLimit;
+        reports = [];
 
-          groupReports();
+        snapshot.forEach(
+          (documentSnapshot) => {
 
-          if (searchMode) {
-            await enrichReportUsersByUids(
-              groupedReports
-                .map((group) => group.uid)
-            );
+            reports.push({
+              id:
+                documentSnapshot.id,
 
-            groupReports();
+              ...documentSnapshot.data()
+
+            });
+
           }
-
-          pagesRead += 1;
-
-        } while (
-          searchMode &&
-          reportHasMore &&
-          groupedReports.filter(
-            (group) =>
-              reportGroupMatchesSearch(
-                group,
-                currentReportSearch.toLowerCase()
-              )
-          ).length < targetMatches &&
-          pagesRead < REPORT_SEARCH_MAX_PAGES_PER_REQUEST
         );
 
-        reportsInitialized = true;
 
-        groupedReports.sort(
-          (a, b) =>
-            (
-              toDate(b.latestReport)?.getTime() || 0
-            ) -
-            (
-              toDate(a.latestReport)?.getTime() || 0
-            )
-        );
+        groupReports();
+        writeCache("reports", reports.slice(0, 5000));
 
         renderReportsTable();
+
         updateReportStats();
-
-        writeCache(
-          "reports",
-          reports
-            .slice(0, REPORT_CACHE_LIMIT)
-        );
-
-        if (
-          reset &&
-          reportTotalCount === null
-        ) {
-          void refreshReportTotalCount();
-        }
 
       } catch (error) {
 
@@ -5927,169 +5063,31 @@
           error
         );
 
-        // A missing createdAt field should not make the whole report section
-        // unusable. Fall back to document-id pagination, then sort the loaded
-        // records by their actual timestamps in the UI.
-        try {
-          const message =
-            String(error?.message || "")
-              .toLowerCase();
-
-          if (message.includes("createdat")) {
-            const fallbackConstraints = [
-              orderBy(documentId(), "desc"),
-              limit(REPORT_PAGE_SIZE)
-            ];
-
-            if (reportPageCursor) {
-              fallbackConstraints.push(
-                startAfter(reportPageCursor)
-              );
-            }
-
-            const snapshot =
-              await getDocs(
-                query(
-                  collection(db, "reports"),
-                  ...fallbackConstraints
-                )
-              );
-
-            if (reset) {
-              reports = [];
-            }
-
-            snapshot.forEach(
-              (documentSnapshot) => {
-                reports.push({
-                  id: documentSnapshot.id,
-                  ...documentSnapshot.data()
-                });
-              }
-            );
-
-            reportPageCursor =
-              snapshot.docs.length
-                ? snapshot.docs[snapshot.docs.length - 1]
-                : reportPageCursor;
-
-            reportHasMore =
-              snapshot.docs.length === REPORT_PAGE_SIZE;
-
-            groupReports();
-            renderReportsTable();
-            updateReportStats();
-            return;
-          }
-        } catch (fallbackError) {
-          console.error(
-            "loadReports fallback:",
-            fallbackError
-          );
-        }
-
-        if (!reports.length) {
+        if (!silent) {
           $("reportsTable").innerHTML = `
             <tr>
               <td colspan="7">
                 <div class="empty-state">
                   <i class="fa-solid fa-triangle-exclamation"></i>
-                  <div>Failed to load reports.</div>
-                  <small>${escapeHtml(error.message)}</small>
+                  <div>
+                    Failed to load reports.
+                  </div>
+                  <small>
+                    ${escapeHtml(error.message)}
+                  </small>
                 </div>
               </td>
             </tr>
           `;
-        }
 
-        showToast(
-          "Could not load reports: " +
-          error.message,
-          "error"
-        );
+          showToast(
+            "Failed to load reports.",
+            "error"
+          );
+        }
 
       } finally {
-
-        reportsLoading = false;
-
-        $("reportsTable")
-          .classList
-          .remove("soft-loading");
-
-        if (refreshButton) {
-          refreshButton.disabled = false;
-        }
-
-        if (button) {
-          button.disabled =
-            !reportHasMore;
-          button.innerHTML = `
-            <i class="fa-solid fa-plus"></i>
-            ${reportHasMore ? "Load More" : "All Loaded"}
-          `;
-        }
-
         hideSyncStatus();
-        updateReportsPaginationUi();
-
-        if (reportSearchQueued) {
-          reportSearchQueued = false;
-          window.clearTimeout(reportSearchTimer);
-          reportSearchTimer = window.setTimeout(() => {
-            if (!reportsLoading) {
-              void loadReports({ reset: true, silent: false });
-            }
-          }, 0);
-        }
-
-      }
-
-    }
-
-
-    function updateReportsPaginationUi() {
-
-      const info =
-        $("reportsPageInfo");
-
-      const button =
-        $("loadMoreReportsButton");
-
-      const loaded =
-        reports.length;
-
-      const loadedGroups =
-        groupedReports.length;
-
-      const total =
-        Number.isFinite(reportTotalCount)
-          ? Number(reportTotalCount)
-          : null;
-
-      if (info) {
-
-        info.textContent =
-          currentReportSearch
-            ? `${loadedGroups.toLocaleString()} matching reported users loaded · newest reports first`
-            : total !== null
-              ? `Loaded ${loaded.toLocaleString()} report records · ${loadedGroups.toLocaleString()} reported users of ${total.toLocaleString()} records · newest first`
-              : `Loaded ${loaded.toLocaleString()} report records · ${loadedGroups.toLocaleString()} reported users · newest first`;
-
-      }
-
-      if (button) {
-
-        button.disabled =
-          reportsLoading ||
-          !reportHasMore;
-
-        if (!reportsLoading) {
-          button.innerHTML = `
-            <i class="fa-solid fa-plus"></i>
-            ${reportHasMore ? "Load More" : "All Loaded"}
-          `;
-        }
-
       }
 
     }
@@ -6222,106 +5220,15 @@
 
     function getReportUser(uid) {
 
-      if (reportUserCache.has(uid)) {
-        return reportUserCache.get(uid);
-      }
-
-      const loaded =
+      return (
         allUsers.find(
           (user) =>
             user.uid === uid
-        );
-
-      if (loaded) {
-        reportUserCache.set(uid, loaded);
-        return loaded;
-      }
-
-      return {
-        uid,
-        name: "Loading user…"
-      };
-
-    }
-
-
-    async function enrichVisibleReportUsers() {
-
-      if (
-        !$("page-reports")?.classList.contains("active")
-      ) {
-        return;
-      }
-
-      const unknownUids =
-        groupedReports
-          .map((group) => group.uid)
-          .filter(Boolean)
-          .filter(
-            (uid) =>
-              !reportUserCache.has(uid) &&
-              !reportUserFetchInFlight.has(uid)
-          )
-          .slice(0, 12);
-
-      if (!unknownUids.length) {
-        return;
-      }
-
-      unknownUids.forEach(
-        (uid) =>
-          reportUserFetchInFlight.add(uid)
+        ) || {
+          uid,
+          name: "Unknown User"
+        }
       );
-
-      const results =
-        await Promise.allSettled(
-          unknownUids.map(
-            async (uid) => {
-
-              const snapshot =
-                await withTimeout(
-                  getDoc(
-                    doc(
-                      db,
-                      "users",
-                      uid
-                    )
-                  ),
-                  10000
-                );
-
-              if (snapshot.exists()) {
-
-                const user = {
-                  ...snapshot.data(),
-                  uid
-                };
-
-                reportUserCache.set(
-                  uid,
-                  user
-                );
-
-              }
-
-            }
-          )
-        );
-
-      unknownUids.forEach(
-        (uid) =>
-          reportUserFetchInFlight.delete(uid)
-      );
-
-      const updated =
-        results.some(
-          (result) =>
-            result.status === "fulfilled"
-        );
-
-      if (updated) {
-        renderReportsTable();
-      }
 
     }
 
@@ -6382,22 +5289,50 @@
       if (
         currentReportSearch
       ) {
+
         const search =
-          currentReportSearch.toLowerCase();
+          currentReportSearch
+            .toLowerCase();
+
 
         list =
           list.filter(
-            (group) =>
-              reportGroupMatchesSearch(group, search)
+            (group) => {
+
+              const user =
+                getReportUser(
+                  group.uid
+                );
+
+
+              return [
+
+                getUserName(user),
+
+                getUserEmail(user),
+
+                group.uid,
+
+                ...group.reasons
+
+              ]
+                .join(" ")
+                .toLowerCase()
+                .includes(search);
+
+            }
           );
+
       }
 
 
       $("reportCountLabel")
         .textContent =
-        reportTotalCount !== null
-          ? `${list.length.toLocaleString()} loaded users · ${reportTotalCount.toLocaleString()} report records`
-          : `${list.length.toLocaleString()} reported user${list.length === 1 ? "" : "s"}`;
+        `${list.length} reported user${
+          list.length === 1
+            ? ""
+            : "s"
+        }`;
 
 
       if (!list.length) {
@@ -6597,10 +5532,6 @@
           )
           .join("");
 
-      // Fill missing user details in the background without delaying
-      // the report table itself.
-      void enrichVisibleReportUsers();
-
     }
 
 
@@ -6614,27 +5545,10 @@
         (event) => {
 
           currentReportSearch =
-            event.target.value.trim();
+            event.target.value
+              .trim();
 
-          window.clearTimeout(
-            reportSearchTimer
-          );
-
-          reportSearchTimer =
-            window.setTimeout(
-              () => {
-                if (reportsLoading) {
-                  reportSearchQueued = true;
-                  return;
-                }
-
-                void loadReports({
-                  reset: true,
-                  silent: false
-                });
-              },
-              250
-            );
+          renderReportsTable();
 
         }
       );
@@ -6643,13 +5557,7 @@
     $("refreshReportsButton")
       .addEventListener(
         "click",
-        () => loadReports({ reset: true })
-      );
-
-    $("loadMoreReportsButton")
-      .addEventListener(
-        "click",
-        () => loadReports({ reset: false })
+        loadReports
       );
 
 
@@ -7016,58 +5924,59 @@
             encodedUid
           );
 
+
         openConfirmModal(
           "Suspend User",
           "Are you sure you want to suspend this user?",
           async () => {
 
-            const suspendedAt =
-              Timestamp.now();
-
             try {
 
-              await withTimeout(
-                updateDoc(
-                  doc(
-                    db,
-                    "users",
-                    uid
-                  ),
-                  {
-                    isSuspended: true,
-                    suspendedAt
-                  }
-                )
+              await updateDoc(
+                doc(
+                  db,
+                  "users",
+                  uid
+                ),
+                {
+                  isSuspended: true,
+                  suspendedAt:
+                    Timestamp.now()
+                }
               );
+
 
               updateLocalUser(
                 uid,
                 {
                   isSuspended: true,
-                  suspendedAt
+                  suspendedAt:
+                    Timestamp.now()
                 }
               );
 
-              renderUsersTable();
-              renderRecentUsers();
-              renderReportsTable();
 
               showToast(
                 "User suspended successfully."
               );
 
+
+              renderUsersTable();
+
+              renderRecentUsers();
+
+              renderReportsTable();
+
               closeUserModal();
 
             } catch (error) {
 
-              console.error(
-                "suspendUser:",
-                error
-              );
+              console.error(error);
 
-              throw new Error(
+              showToast(
                 "Failed to suspend user: " +
-                error.message
+                error.message,
+                "error"
               );
 
             }
@@ -7078,8 +5987,6 @@
       };
 
 
-    /* ==========================================================
-       BLOCK USER
     /* ==========================================================
        BLOCK USER
     =========================================================== */
@@ -7092,58 +5999,59 @@
             encodedUid
           );
 
+
         openConfirmModal(
           "Block User",
           "Are you sure you want to block this user?",
           async () => {
 
-            const blockedAt =
-              Timestamp.now();
-
             try {
 
-              await withTimeout(
-                updateDoc(
-                  doc(
-                    db,
-                    "users",
-                    uid
-                  ),
-                  {
-                    isBlocked: true,
-                    blockedAt
-                  }
-                )
+              await updateDoc(
+                doc(
+                  db,
+                  "users",
+                  uid
+                ),
+                {
+                  isBlocked: true,
+                  blockedAt:
+                    Timestamp.now()
+                }
               );
+
 
               updateLocalUser(
                 uid,
                 {
                   isBlocked: true,
-                  blockedAt
+                  blockedAt:
+                    Timestamp.now()
                 }
               );
 
-              renderUsersTable();
-              renderRecentUsers();
-              renderReportsTable();
 
               showToast(
                 "User blocked successfully."
               );
 
+
+              renderUsersTable();
+
+              renderRecentUsers();
+
+              renderReportsTable();
+
               closeUserModal();
 
             } catch (error) {
 
-              console.error(
-                "blockUser:",
-                error
-              );
+              console.error(error);
 
-              throw new Error(
+              showToast(
                 "Failed to block user: " +
-                error.message
+                error.message,
+                "error"
               );
 
             }
@@ -7156,154 +6064,7 @@
 
     /* ==========================================================
        DISMISS REPORTS
-    /* ==========================================================
-       DISMISS REPORTS
     =========================================================== */
-
-    async function findAllReportsForUser(uid) {
-
-      // Most Masoya reports use reportedUid. The fallbacks keep older
-      // report documents compatible without downloading the full collection.
-      const fields = [
-        "reportedUid",
-        "userId",
-        "uid"
-      ];
-
-      for (const field of fields) {
-
-        try {
-
-          const snapshot =
-            await withTimeout(
-              getDocs(
-                query(
-                  collection(db, "reports"),
-                  where(
-                    field,
-                    "==",
-                    uid
-                  )
-                )
-              ),
-              10000
-            );
-
-          if (!snapshot.empty) {
-            return snapshot.docs;
-          }
-
-        } catch (error) {
-
-          console.warn(
-            `Report lookup by ${field} failed:`,
-            error
-          );
-
-        }
-
-      }
-
-      return [];
-
-    }
-
-
-    async function updateReportsForUser(
-      uid,
-      status
-    ) {
-
-      const docs =
-        await findAllReportsForUser(uid);
-
-      if (!docs.length) {
-        return 0;
-      }
-
-      const now =
-        Timestamp.now();
-
-      const chunks = [];
-
-      for (
-        let index = 0;
-        index < docs.length;
-        index += 400
-      ) {
-        chunks.push(
-          docs.slice(index, index + 400)
-        );
-      }
-
-      await Promise.all(
-        chunks.map(
-          (chunk) => {
-
-            const batch =
-              writeBatch(db);
-
-            chunk.forEach(
-              (reportDoc) => {
-
-                batch.update(
-                  reportDoc.ref,
-                  {
-                    status,
-                    reviewedAt: now,
-                    reviewedBy:
-                      currentUser.uid
-                  }
-                );
-
-              }
-            );
-
-            return withTimeout(
-              batch.commit(),
-              ACTION_TIMEOUT_MS
-            );
-
-          }
-        )
-      );
-
-      const changedIds =
-        new Set(
-          docs.map(
-            (reportDoc) =>
-              reportDoc.id
-          )
-        );
-
-      reports.forEach(
-        (report) => {
-
-          if (
-            changedIds.has(
-              report.id
-            )
-          ) {
-            report.status =
-              status;
-            report.reviewedAt =
-              now;
-            report.reviewedBy =
-              currentUser.uid;
-          }
-
-        }
-      );
-
-      writeCache(
-        "reports",
-        reports.slice(0, REPORT_CACHE_LIMIT)
-      );
-
-      return docs.length;
-
-    }
-
 
     window.dismissReports =
       function(encodedUid) {
@@ -7313,26 +6074,81 @@
             encodedUid
           );
 
+
         openConfirmModal(
           "Dismiss Reports",
           "Mark all reports for this user as dismissed?",
           async () => {
 
-            const count =
-              await updateReportsForUser(
-                uid,
-                "dismissed"
+            try {
+
+              const userReports =
+                reports.filter(
+                  (report) =>
+                    (
+                      report.reportedUid ||
+                      report.userId ||
+                      report.uid
+                    ) === uid
+                );
+
+
+              for (
+                const report of
+                userReports
+              ) {
+
+                await updateDoc(
+                  doc(
+                    db,
+                    "reports",
+                    report.id
+                  ),
+                  {
+                    status:
+                      "dismissed",
+                    reviewedAt:
+                      Timestamp.now(),
+                    reviewedBy:
+                      currentUser.uid
+                  }
+                );
+
+              }
+
+
+              userReports.forEach(
+                (report) => {
+
+                  report.status =
+                    "dismissed";
+
+                }
               );
 
-            groupReports();
-            renderReportsTable();
-            updateReportStats();
 
-            showToast(
-              count
-                ? `${count} report(s) dismissed successfully.`
-                : "No reports found for this user."
-            );
+              groupReports();
+
+              renderReportsTable();
+
+              updateReportStats();
+
+
+              showToast(
+                "Reports dismissed successfully."
+              );
+
+            } catch (error) {
+
+              console.error(error);
+
+              showToast(
+                "Failed to dismiss reports: " +
+                error.message,
+                "error"
+              );
+
+            }
 
           }
         );
@@ -7340,8 +6156,6 @@
       };
 
 
-    /* ==========================================================
-       MARK REVIEWED
     /* ==========================================================
        MARK REVIEWED
     =========================================================== */
@@ -7354,118 +6168,86 @@
             encodedUid
           );
 
+
         openConfirmModal(
           "Mark Reviewed",
           "Mark all pending reports for this user as reviewed?",
           async () => {
 
-            const docs =
-              await findAllReportsForUser(uid);
+            try {
 
-            const pendingDocs =
-              docs.filter(
-                (reportDoc) =>
-                  (
-                    reportDoc.data().status ||
+              const userReports =
+                reports.filter(
+                  (report) =>
+                    (
+                      report.reportedUid ||
+                      report.userId ||
+                      report.uid
+                    ) === uid &&
+                    (
+                      report.status ||
+                      "pending"
+                    ) ===
                     "pending"
-                  ) === "pending"
-              );
+                );
 
-            if (!pendingDocs.length) {
 
-              showToast(
-                "No pending reports found for this user.",
-                "warning"
-              );
+              for (
+                const report of
+                userReports
+              ) {
 
-              return;
-
-            }
-
-            const now =
-              Timestamp.now();
-
-            const chunks = [];
-
-            for (
-              let index = 0;
-              index < pendingDocs.length;
-              index += 400
-            ) {
-              chunks.push(
-                pendingDocs.slice(index, index + 400)
-              );
-            }
-
-            await Promise.all(
-              chunks.map(
-                (chunk) => {
-
-                  const batch =
-                    writeBatch(db);
-
-                  chunk.forEach(
-                    (reportDoc) => {
-
-                      batch.update(
-                        reportDoc.ref,
-                        {
-                          status: "reviewed",
-                          reviewedAt: now,
-                          reviewedBy:
-                            currentUser.uid
-                        }
-                      );
-
-                    }
-                  );
-
-                  return withTimeout(
-                    batch.commit(),
-                    ACTION_TIMEOUT_MS
-                  );
-
-                }
-              )
-            );
-
-            const pendingIds =
-              new Set(
-                pendingDocs.map(
-                  (reportDoc) =>
-                    reportDoc.id
-                )
-              );
-
-            reports.forEach(
-              (report) => {
-
-                if (
-                  pendingIds.has(
+                await updateDoc(
+                  doc(
+                    db,
+                    "reports",
                     report.id
-                  )
-                ) {
-                  report.status = "reviewed";
-                  report.reviewedAt = now;
-                  report.reviewedBy =
-                    currentUser.uid;
-                }
+                  ),
+                  {
+                    status:
+                      "reviewed",
+                    reviewedAt:
+                      Timestamp.now(),
+                    reviewedBy:
+                      currentUser.uid
+                  }
+                );
 
               }
-            );
 
-            writeCache(
-              "reports",
-              reports.slice(0, REPORT_CACHE_LIMIT)
-            );
 
-            groupReports();
-            renderReportsTable();
-            updateReportStats();
+              userReports.forEach(
+                (report) => {
 
-            showToast(
-              `${pendingDocs.length} report(s) marked as reviewed.`
-            );
+                  report.status =
+                    "reviewed";
+
+                }
+              );
+
+
+              groupReports();
+
+              renderReportsTable();
+
+              updateReportStats();
+
+
+              showToast(
+                "Reports marked as reviewed."
+              );
+
+            } catch (error) {
+
+              console.error(error);
+
+              showToast(
+                "Failed to mark reports reviewed: " +
+                error.message,
+                "error"
+              );
+
+            }
 
           }
         );
@@ -7473,8 +6255,6 @@
       };
 
 
-    /* ==========================================================
-       LOCAL USER UPDATE
     /* ==========================================================
        LOCAL USER UPDATE
     =========================================================== */
@@ -7554,57 +6334,18 @@
           const callback =
             confirmCallback;
 
-          if (!callback || confirmActionButtonBusy) {
+          if (!callback) {
             return;
           }
 
-          confirmActionButtonBusy = true;
+          closeConfirmModal();
 
-          const button =
-            $("confirmActionButton");
-
-          const previousHtml =
-            button.innerHTML;
-
-          button.disabled = true;
-          button.innerHTML = `
-            <i class="fa-solid fa-spinner fa-spin"></i>
-            Processing…
-          `;
-
-          try {
-
-            await callback();
-
-            closeConfirmModal();
-
-          } catch (error) {
-
-            console.error(
-              "Confirmation action:",
-              error
-            );
-
-            showToast(
-              error.message ||
-              "Action could not be completed.",
-              "error"
-            );
-
-          } finally {
-
-            confirmActionButtonBusy = false;
-            button.disabled = false;
-            button.innerHTML = previousHtml;
-
-          }
+          await callback();
 
         }
       );
 
 
-    /* ==========================================================
-       VERIFICATION REQUESTS
     /* ==========================================================
        VERIFICATION REQUESTS
        - Only pending requests are queried from Firestore.
@@ -7647,63 +6388,27 @@
 
 
     function getVerificationUser(request) {
-
       const uid =
         request?.uid ||
-        request?.userId ||
-        request?.userUid ||
         request?.id;
 
-      if (
-        uid &&
-        verificationProfileCache.has(uid)
-      ) {
-        return verificationProfileCache.get(uid);
-      }
-
-      const loaded =
+      return (
         allUsers.find(
           (item) =>
             item.uid === uid
-        );
-
-      if (loaded) {
-        verificationProfileCache.set(uid, loaded);
-        return loaded;
-      }
-
-      const fromRequest = {
-        uid,
-        fullName:
-          request?.name ||
-          request?.fullName ||
-          "Unknown User",
-        name:
-          request?.name ||
-          request?.fullName ||
-          "Unknown User",
-        email:
-          request?.email ||
-          "",
-        gender:
-          request?.gender ||
-          "",
-        photoUrl:
-          request?.photoUrl ||
-          request?.photoURL ||
-          request?.profileImage ||
-          request?.profileImageUrl ||
-          ""
-      };
-
-      if (uid) {
-        verificationProfileCache.set(
+        ) || {
           uid,
-          fromRequest
-        );
-      }
-
-      return fromRequest;
+          fullName:
+            request?.name ||
+            "Unknown User",
+          name:
+            request?.name ||
+            "Unknown User",
+          photoUrl:
+            request?.photoUrl ||
+            ""
+        }
+      );
     }
 
 
@@ -7713,156 +6418,9 @@
 
       return (
         request?.photoUrl ||
-        request?.photoURL ||
-        request?.profileImage ||
-        request?.profileImageUrl ||
-        request?.profilePhoto ||
-        request?.avatar ||
-        request?.avatarUrl ||
         getUserPhoto(user) ||
         ""
       );
-    }
-
-
-    async function loadVerificationProfiles(requests) {
-
-      const uids =
-        Array.from(
-          new Set(
-            (requests || [])
-              .map(
-                (request) =>
-                  request?.uid ||
-                  request?.userId ||
-                  request?.userUid
-              )
-              .filter(Boolean)
-              .filter(
-                (uid) =>
-                  !verificationProfileFetchInFlight.has(uid)
-              )
-          )
-        );
-
-      if (!uids.length) return;
-
-      uids.forEach(
-        (uid) =>
-          verificationProfileFetchInFlight.add(uid)
-      );
-
-      try {
-
-        for (let index = 0; index < uids.length; index += 30) {
-
-          const chunk =
-            uids.slice(index, index + 30);
-
-          const snapshot =
-            await withTimeout(
-              getDocs(
-                query(
-                  collection(db, "users"),
-                  where(
-                    documentId(),
-                    "in",
-                    chunk
-                  )
-                )
-              ),
-              10000,
-              "Loading verification profiles timed out."
-            );
-
-          snapshot.forEach(
-            (documentSnapshot) => {
-              verificationProfileCache.set(
-                documentSnapshot.id,
-                normalizeUserDoc(documentSnapshot)
-              );
-            }
-          );
-        }
-
-        // Update only the verification cards whose user profile was enriched.
-        (requests || []).forEach(
-          (request) => {
-            const card =
-              $("verification-card-" + request.id);
-
-            if (!card) return;
-
-            const user =
-              getVerificationUser(request);
-
-            const nameElement =
-              card.querySelector(".verification-user-info .user-name");
-
-            if (nameElement) {
-              nameElement.textContent =
-                getUserName(user);
-            }
-
-            const emailElement =
-              card.querySelector(".verification-user-info .user-meta");
-
-            if (emailElement) {
-              emailElement.textContent =
-                getUserEmail(user);
-            }
-
-            const photo =
-              getVerificationProfilePhoto(request);
-
-            const photoElement =
-              card.querySelector(".verification-photo");
-
-            if (photo && photoElement && photoElement.src !== photo) {
-              photoElement.src = photo;
-              photoElement.style.display = "block";
-            } else if (photo && !photoElement) {
-              const wrap =
-                card.querySelector(".verification-photo-wrap");
-
-              if (wrap) {
-                wrap.innerHTML = `
-                  <img
-                    class="verification-photo"
-                    src="${escapeHtml(photo)}"
-                    alt="${escapeHtml(getUserName(user))}"
-                    loading="eager"
-                    decoding="async"
-                    onclick="openImagePreview('${encodeURIComponent(photo)}')"
-                    onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\"verification-empty\" style=\"padding:30px;\"><i class=\"fa-solid fa-image\"></i><div>Profile picture could not be loaded.</div></div>';"
-                  />
-                `;
-              }
-            }
-
-            const video =
-              card.querySelector("video");
-
-            const poster =
-              photo || "";
-
-            if (video && poster && !video.getAttribute("poster")) {
-              video.setAttribute("poster", poster);
-            }
-          }
-        );
-
-      } catch (error) {
-        console.warn(
-          "loadVerificationProfiles:",
-          error
-        );
-      } finally {
-        uids.forEach(
-          (uid) =>
-            verificationProfileFetchInFlight.delete(uid)
-        );
-      }
     }
 
 
@@ -7975,28 +6533,6 @@
                       </button>
 
                     </div>
-
-                    <div class="verification-desktop-actions">
-
-                      <button
-                        class="btn btn-success"
-                        type="button"
-                        onclick="approveVerification('${requestId}')"
-                      >
-                        <i class="fa-solid fa-check"></i>
-                        Approve & Verify
-                      </button>
-
-                      <button
-                        class="btn btn-danger"
-                        type="button"
-                        onclick="rejectVerification('${requestId}')"
-                      >
-                        <i class="fa-solid fa-xmark"></i>
-                        Reject
-                      </button>
-
-                    </div>
                   `
                   : `
                     <div class="verification-empty" style="padding:55px 10px;">
@@ -8023,8 +6559,7 @@
                         class="verification-photo"
                         src="${escapeHtml(profilePhoto)}"
                         alt="${escapeHtml(getUserName(user))}"
-                        loading="eager"
-                        decoding="async"
+                        loading="lazy"
                         onclick="openImagePreview('${encodedPhoto}')"
                         onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\"verification-empty\" style=\"padding:30px;\"><i class=\"fa-solid fa-image\"></i><div>Profile picture could not be loaded.</div></div>';"
                       />
@@ -8229,7 +6764,6 @@
 
 
     function refreshVerificationCardDetails(request) {
-
       const card =
         $("verification-card-" + request.id);
 
@@ -8238,39 +6772,30 @@
       const video =
         card.querySelector("video");
 
+      const oldVideoUrl =
+        video?.dataset?.videoSrc || "";
+
       const newVideoUrl =
         getVerificationVideoUrl(request);
 
-      if (video && newVideoUrl) {
-        video.dataset.videoSrc = newVideoUrl;
+      const oldPhoto =
+        card
+          .querySelector(".verification-photo")
+          ?.getAttribute("src") || "";
 
-        if (
-          !video.getAttribute("poster") &&
-          getVerificationProfilePhoto(request)
-        ) {
-          video.setAttribute(
-            "poster",
-            getVerificationProfilePhoto(request)
-          );
-        }
-      }
-
-      const photo =
+      const newPhoto =
         getVerificationProfilePhoto(request);
 
-      const photoElement =
-        card.querySelector(".verification-photo");
-
-      if (photo && photoElement) {
-        const existing =
-          photoElement.getAttribute("src") || "";
-
-        if (existing !== photo) {
-          photoElement.setAttribute("src", photo);
-        }
+      if (
+        oldVideoUrl !== newVideoUrl ||
+        oldPhoto !== newPhoto
+      ) {
+        card.outerHTML =
+          verificationCardHtml(request);
+        return true;
       }
 
-      return true;
+      return false;
     }
 
 
@@ -8326,7 +6851,7 @@
               )} more
             </button>
             <span>
-              Showing ${shown} of ${pending.length} recent pending requests
+              Showing ${shown} of ${pending.length} loaded requests
             </span>
           </div>
         `
@@ -8441,10 +6966,6 @@
       verificationRequests =
         normalizedNext;
 
-      void loadVerificationProfiles(
-        normalizedNext
-      );
-
       if (
         !verificationHasRendered ||
         !$("verificationTable")
@@ -8498,136 +7019,52 @@
         return;
       }
 
-      const buildQuery =
-        (timestampField = "submittedAt") =>
-          query(
-            collection(
-              db,
-              "verification_requests"
-            ),
-            where(
-              "status",
-              "==",
-              "pending"
-            ),
-            orderBy(
-              timestampField,
-              "desc"
-            ),
-            limit(
-              VERIFICATION_QUERY_LIMIT
-            )
-          );
+      const pendingVerificationQuery =
+        query(
+          collection(
+            db,
+            "verification_requests"
+          ),
+          where(
+            "status",
+            "==",
+            "pending"
+          ),
+          limit(
+            VERIFICATION_QUERY_LIMIT
+          )
+        );
 
-      let activeField = "submittedAt";
+      verificationRequestsUnsubscribe =
+        onSnapshot(
+          pendingVerificationQuery,
+          (snapshot) => {
 
-      const attach = (verificationQuery) => {
-        verificationRequestsUnsubscribe =
-          onSnapshot(
-            verificationQuery,
-            (snapshot) => {
-
-              const nextRequests =
-                snapshot.docs
-                  .map(
-                    (docSnapshot) => ({
-                      id: docSnapshot.id,
-                      ...docSnapshot.data()
-                    })
-                  )
-                  .sort(
-                    (a, b) =>
-                      (
-                        toDate(
-                          getVerificationSubmittedValue(b)
-                        )?.getTime() || 0
-                      ) -
-                      (
-                        toDate(
-                          getVerificationSubmittedValue(a)
-                        )?.getTime() || 0
-                      )
-                  );
-
-              reconcileVerificationRequests(
-                nextRequests
+            const nextRequests =
+              snapshot.docs.map(
+                (docSnapshot) => ({
+                  id:
+                    docSnapshot.id,
+                  ...docSnapshot.data()
+                })
               );
 
-              void loadVerificationProfiles(
-                nextRequests
-              );
+            reconcileVerificationRequests(
+              nextRequests
+            );
 
-              writeCache(
-                "verification",
-                nextRequests.slice(0, VERIFICATION_QUERY_LIMIT)
-              );
-            },
-            (error) => {
-              console.error(
-                "Verification realtime listener:",
-                error
-              );
-
-              // Some projects use createdAt instead of submittedAt.
-              // Re-attach once with that field if the first ordering fails.
-              if (
-                activeField === "submittedAt" &&
-                verificationRequestsUnsubscribe
-              ) {
-                const previous =
-                  verificationRequestsUnsubscribe;
-                verificationRequestsUnsubscribe = null;
-                try { previous(); } catch (_) {}
-                activeField = "createdAt";
-                attach(buildQuery("createdAt"));
-                return;
-              }
-
-              if (activeField === "createdAt") {
-                const previous =
-                  verificationRequestsUnsubscribe;
-                verificationRequestsUnsubscribe = null;
-                try { previous?.(); } catch (_) {}
-
-                verificationRequestsUnsubscribe =
-                  onSnapshot(
-                    query(
-                      collection(db, "verification_requests"),
-                      where("status", "==", "pending"),
-                      limit(VERIFICATION_QUERY_LIMIT)
-                    ),
-                    (fallbackSnapshot) => {
-                      const nextRequests =
-                        fallbackSnapshot.docs
-                          .map((docSnapshot) => ({
-                            id: docSnapshot.id,
-                            ...docSnapshot.data()
-                          }))
-                          .sort((a, b) =>
-                            (toDate(getVerificationSubmittedValue(b))?.getTime() || 0) -
-                            (toDate(getVerificationSubmittedValue(a))?.getTime() || 0)
-                          );
-
-                      reconcileVerificationRequests(nextRequests);
-                      void loadVerificationProfiles(nextRequests);
-                      writeCache(
-                        "verification",
-                        nextRequests.slice(0, VERIFICATION_QUERY_LIMIT)
-                      );
-                    },
-                    (fallbackError) => {
-                      console.error(
-                        "Verification unordered realtime fallback failed:",
-                        fallbackError
-                      );
-                    }
-                  );
-              }
-            }
-          );
-      };
-
-      attach(buildQuery(activeField));
+            writeCache(
+              "verification",
+              verificationRequests.slice(0, VERIFICATION_QUERY_LIMIT)
+            );
+          },
+          (error) => {
+            console.error(
+              "Verification realtime listener:",
+              error
+            );
+          }
+        );
     }
 
 
@@ -8645,7 +7082,7 @@
         $("verificationTable").innerHTML = `
           <div class="verification-empty">
             <i class="fa-solid fa-spinner fa-spin"></i>
-            <div>Loading latest verification requests...</div>
+            <div>Loading verification requests...</div>
           </div>
         `;
       } else {
@@ -8659,102 +7096,51 @@
         verificationVisibleLimit =
           VERIFICATION_RENDER_LIMIT;
 
-        let snapshot;
-
-        try {
-          snapshot =
-            await withTimeout(
-              getDocs(
-                query(
-                  collection(db, "verification_requests"),
-                  where("status", "==", "pending"),
-                  orderBy("submittedAt", "desc"),
-                  limit(VERIFICATION_QUERY_LIMIT)
-                )
-              ),
-              12000,
-              "Verification loading timed out."
-            );
-        } catch (submittedError) {
-          console.warn(
-            "submittedAt verification query failed; trying createdAt.",
-            submittedError
+        const pendingVerificationQuery =
+          query(
+            collection(
+              db,
+              "verification_requests"
+            ),
+            where(
+              "status",
+              "==",
+              "pending"
+            ),
+            limit(
+              VERIFICATION_QUERY_LIMIT
+            )
           );
 
-          try {
-            snapshot =
-              await withTimeout(
-                getDocs(
-                  query(
-                    collection(db, "verification_requests"),
-                    where("status", "==", "pending"),
-                    orderBy("createdAt", "desc"),
-                    limit(VERIFICATION_QUERY_LIMIT)
-                  )
-                ),
-                12000,
-                "Verification loading timed out."
-              );
-          } catch (createdError) {
-            // Last fallback: keep the old query behavior so the queue can
-            // still work in databases that have no timestamp on older docs.
-            snapshot =
-              await withTimeout(
-                getDocs(
-                  query(
-                    collection(db, "verification_requests"),
-                    where("status", "==", "pending"),
-                    limit(VERIFICATION_QUERY_LIMIT)
-                  )
-                ),
-                12000,
-                "Verification loading timed out."
-              );
-          }
-        }
-
-        const nextRequests =
-          snapshot.docs
-            .map(
-              (docSnapshot) => ({
-                id: docSnapshot.id,
-                ...docSnapshot.data()
-              })
-            )
-            .sort(
-              (a, b) =>
-                (
-                  toDate(
-                    getVerificationSubmittedValue(b)
-                  )?.getTime() || 0
-                ) -
-                (
-                  toDate(
-                    getVerificationSubmittedValue(a)
-                  )?.getTime() || 0
-                )
-            );
-
-        reconcileVerificationRequests(
-          nextRequests
-        );
-
-        // Fetch actual user profiles separately so profile pictures still
-        // appear even when Users has never been opened in this session.
-        void loadVerificationProfiles(
-          nextRequests
-        );
+        const snapshotPromise =
+          getDocs(
+            pendingVerificationQuery
+          );
 
         const totalPromise =
           refreshTotal
             ? loadTotalPendingVerificationCount()
             : Promise.resolve();
 
-        await totalPromise;
+        const [snapshot] =
+          await Promise.all([
+            snapshotPromise,
+            totalPromise
+          ]);
+
+        reconcileVerificationRequests(
+          snapshot.docs.map(
+            (docSnapshot) => ({
+              id:
+                docSnapshot.id,
+              ...docSnapshot.data()
+            })
+          )
+        );
 
         writeCache(
           "verification",
-          nextRequests.slice(0, VERIFICATION_QUERY_LIMIT)
+          verificationRequests.slice(0, VERIFICATION_QUERY_LIMIT)
         );
 
         verificationHasRendered = true;
@@ -9108,11 +7494,7 @@
           );
         }
 
-        await withTimeout(
-          batch.commit(),
-          ACTION_TIMEOUT_MS,
-          "Verification update timed out. Please check your connection and try again."
-        );
+        await batch.commit();
 
         // Keep local state consistent with the optimistic removal.
         verificationRequests =
@@ -9358,7 +7740,6 @@
         }
 
       } finally {
-        configInitialized = true;
         hideSyncStatus();
       }
 
@@ -9460,13 +7841,12 @@
               updatedBy: currentUser.uid
             };
 
-            await withTimeout(
-              setDoc(
-                doc(
-                  db,
-                  "app_config",
-                  "update"
-                ),
+            await setDoc(
+              doc(
+                db,
+                "app_config",
+                "update"
+              ),
               {
                 minimumVersionCode,
                 latestVersionCode,
@@ -9479,12 +7859,9 @@
                 updatedBy:
                   currentUser.uid
               },
-                {
-                  merge: true
-                }
-              ),
-              ACTION_TIMEOUT_MS,
-              "Saving configuration timed out. Please check your connection and try again."
+              {
+                merge: true
+              }
             );
 
 
@@ -10201,156 +8578,50 @@
        DASHBOARD
     =========================================================== */
 
-    async function refreshDashboard({
-      silent = false
-    } = {}) {
+    async function refreshDashboard() {
 
-      if (!silent) {
-        showSyncStatus("Updating dashboard…");
+      if (!allUsers.length) {
+        return;
       }
 
-      const now =
-        new Date();
 
-      const startOfToday =
-        new Date(
-          now.getFullYear(),
-          now.getMonth(),
-          now.getDate()
-        );
+      updateUserStats();
 
-      const activeQuery =
-        query(
-          collection(db, "users"),
-          where(
-            "lastActiveAt",
-            ">=",
-            Timestamp.fromDate(startOfToday)
-          )
-        );
+      updateReportStats();
 
-      const pendingReportsQuery =
-        query(
-          collection(db, "reports"),
-          where(
-            "status",
-            "==",
-            "pending"
-          )
-        );
 
-      const results =
-        await Promise.allSettled([
+      try {
 
-          getCountFromServer(
-            collection(db, "users")
-          ),
+        const matchesSnapshot =
+          await getDocs(
+            collection(
+              db,
+              "matches"
+            )
+          );
 
-          getCountFromServer(
-            activeQuery
-          ),
-
-          getCountFromServer(
-            collection(db, "matches")
-          ),
-
-          getCountFromServer(
-            pendingReportsQuery
-          )
-
-        ]);
-
-      const [
-        totalResult,
-        activeResult,
-        matchesResult,
-        pendingReportsResult
-      ] = results;
-
-      if (
-        totalResult.status === "fulfilled"
-      ) {
-
-        userTotalCount =
-          totalResult.value.data().count;
-
-        $("statTotalUsers")
-          .textContent =
-          Number(
-            userTotalCount
-          ).toLocaleString();
-
-      }
-
-      if (
-        activeResult.status === "fulfilled"
-      ) {
-
-        dashboardActiveCountLoaded = true;
-
-        $("statActiveToday")
-          .textContent =
-          Number(
-            activeResult.value.data().count
-          ).toLocaleString();
-
-      } else {
-
-        dashboardActiveCountLoaded = false;
-
-        updateUserStats();
-
-      }
-
-      if (
-        matchesResult.status === "fulfilled"
-      ) {
 
         $("statMatches")
           .textContent =
-          Number(
-            matchesResult.value.data().count
-          ).toLocaleString();
+          matchesSnapshot.size
+            .toLocaleString();
 
-      } else {
+      } catch (error) {
+
+        console.error(
+          "Matches:",
+          error
+        );
 
         $("statMatches")
-          .textContent = "—";
-
-      }
-
-      if (
-        pendingReportsResult.status === "fulfilled"
-      ) {
-
-        $("statPendingReports")
           .textContent =
-          Number(
-            pendingReportsResult.value.data().count
-          ).toLocaleString();
+          "—";
 
-      } else {
-
-        updateReportStats();
-
-      }
-
-      // Chart rendering is local-only now; it never downloads the
-      // entire users or matches collection.
-      renderCharts();
-
-      updateUsersPaginationUi();
-      updateReportsPaginationUi();
-
-      if (!silent) {
-        hideSyncStatus();
       }
 
     }
 
 
-    /* ==========================================================
-       CHARTS
     /* ==========================================================
        CHARTS
     =========================================================== */
